@@ -1,7 +1,7 @@
 import { setupInput } from './engine/input.js';
 import { update } from './engine/update.js';
 import { draw } from './render/draw.js';
-import { debug, initDebugger } from './engine/debugger.js';
+import { debug, initDebugger, toggleDebug } from './engine/debugger.js';
 import { player } from './engine/player.js';
 import { generateStartingGear, addItemToInventory } from './systems/inventory/index.js';
 import { loadAssets, debugAssets } from './systems/assetLoader.js';
@@ -15,9 +15,7 @@ export async function startGame() {
     debug('📦 Инициализация игры...');
 
     const canvas = document.getElementById('gameCanvas');
-    if (!canvas) {
-      throw new Error('Canvas не найден!');
-    }
+    if (!canvas) throw new Error('Canvas не найден!');
     const ctx = canvas.getContext('2d');
 
     setupInput(canvas);
@@ -27,22 +25,19 @@ export async function startGame() {
     await loadAssets();
     debug('✅ Ассеты загружены');
 
-    // Скрываем экран загрузки после завершения
-const loadingScreen = document.getElementById('loadingScreen');
-if (loadingScreen) loadingScreen.style.display = 'none';
+    const loadingScreen = document.getElementById('loadingScreen');
+    if (loadingScreen) loadingScreen.style.display = 'none';
 
     debugAssets();
 
-const startingItems = generateStartingGear();
-for (const item of startingItems) {
-  const result = addItemToInventory(player.inventory, item);
-  debug(`Added starting item ${item.name}: ${result}`);
-}
+    const startingItems = generateStartingGear();
+    for (const item of startingItems) {
+      const result = addItemToInventory(player.inventory, item);
+      if (result) debug(`🎒 Добавлен предмет: ${item.name}`);
+    }
 
-// Устанавливаем стартовую сцену
-window.gameState.scene = 'map';
-debug('🗺️ Текущая сцена установлена: map');
-
+    window.gameState.scene = 'map';
+    debug('🗺️ Сцена установлена: map');
 
     function gameLoop() {
       try {
@@ -57,9 +52,9 @@ debug('🗺️ Текущая сцена установлена: map');
 
     debug('🚀 Запускаем игровой цикл...');
     gameLoop();
-    
-    // Отключаем отладку после запуска
-window.debug = () => {};
+
+    // ❗ Отключаем логирование после запуска
+    toggleDebug(false);
 
   } catch (error) {
     debug(`❌ Критическая ошибка: ${error.message}`, 'error');

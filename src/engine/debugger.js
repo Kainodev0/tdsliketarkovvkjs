@@ -6,8 +6,13 @@ export function debug(msg, type = 'log') {
   if (!enabled) return;
 
   const time = new Date().toLocaleTimeString();
-  const line = `[${time}] [${type.toUpperCase()}] ${msg}`;
-  console[type](line);
+
+  // Безопасное приведение типа к строке и uppercase
+  const level = typeof type === 'string' ? type.toUpperCase() : 'LOG';
+  const line = `[${time}] [${level}] ${msg}`;
+
+  // Всегда используем console.log, чтобы избежать ошибки с несуществующим методом
+  console.log(line);
 
   buffer.push(line);
   if (buffer.length > maxLines) buffer.shift();
