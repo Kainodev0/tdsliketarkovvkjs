@@ -15,6 +15,14 @@ export const assets = {
 let totalAssets = 0;
 let loadedAssets = 0;
 
+// Добавляем пустые массивы
+const soundsToLoad = [];
+const dataToLoad = [
+  { id: 'items', src: 'src/data/items.json' },
+  { id: 'maps', src: 'src/data/maps.json' },
+  { id: 'weapons', src: 'src/data/weapons.json' }
+];
+
 /**
  * Загрузка изображения
  * @param {string} id - Идентификатор изображения
@@ -117,19 +125,19 @@ export async function loadAssets() {
   // Список ресурсов для загрузки
   const imagesToLoad = [
     // Characters
-    { id: 'player', src: 'assets/sprites/characters/player.svg' },
-    { id: 'enemy', src: 'assets/sprites/characters/enemy.svg' },
-    { id: 'trader', src: 'assets/sprites/characters/trader.svg' },
+    { id: 'player', src: 'src/assets/sprites/characters/player.svg' },
+    { id: 'enemy', src: 'src/assets/sprites/characters/enemy.svg' },
+    { id: 'trader', src: 'src/assets/sprites/characters/trader.svg' },
 
     // Weapons
-    { id: 'pistol', src: 'assets/sprites/weapons/pistol.svg' },
-    { id: 'shotgun', src: 'assets/sprites/weapons/shotgun.svg' },
-    { id: 'rifle', src: 'assets/sprites/weapons/rifle.svg' },
+    { id: 'pistol', src: 'src/assets/sprites/weapons/pistol.svg' },
+    { id: 'shotgun', src: 'src/assets/sprites/weapons/shotgun.svg' },
+    { id: 'rifle', src: 'src/assets/sprites/weapons/rifle.svg' },
 
     // Loot
-    { id: 'crate', src: 'assets/sprites/loot/crate.svg' },
-    { id: 'medkit', src: 'assets/sprites/loot/medkit.svg' },
-    { id: 'ammo_box', src: 'assets/sprites/loot/ammo_box.svg' }
+    { id: 'crate', src: 'src/assets/sprites/loot/crate.svg' },
+    { id: 'medkit', src: 'src/assets/sprites/loot/medkit.svg' },
+    { id: 'ammo_box', src: 'src/assets/sprites/loot/ammo_box.svg' }
   ];
   
   // Обновляем общее количество ресурсов
@@ -140,7 +148,9 @@ export async function loadAssets() {
     const imagePromises = imagesToLoad.map(img => loadImage(img.id, img.src));
     
     // Загружаем все звуки
-    const soundPromises = soundsToLoad.map(sound => loadSound(sound.id, sound.src));
+    const soundPromises = soundsToLoad.length ? 
+      soundsToLoad.map(sound => loadSound(sound.id, sound.src)) : 
+      [];
     
     // Загружаем все данные
     const dataPromises = dataToLoad.map(data => loadJSON(data.id, data.src));
