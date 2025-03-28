@@ -18,6 +18,13 @@ export function debug(msg, type = 'log') {
   }
 }
 
+export function initDebugger() {
+  const div = document.getElementById('debugger');
+  if (div) {
+    div.innerText = '[DEBUGGER INITIALIZED]\n';
+  }
+}
+
 export function toggleDebug(on) {
   enabled = on;
 }
