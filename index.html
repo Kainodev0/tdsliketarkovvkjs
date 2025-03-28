@@ -6,6 +6,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <title>PixelEscape | Выживи и добудь ценные ресурсы</title>
   <style>
+
     body { 
       margin: 0; 
       overflow: hidden; 
@@ -191,6 +192,10 @@
       // Запускаем игру
       startGame();
     });
+  </script>
+  <script type="module">
+    import { startGame } from './src/main.js';
+    startGame();
   </script>
 </body>
 </html>
