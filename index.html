@@ -13,6 +13,7 @@
       background: #111; 
       font-family: monospace;
       color: #eee;
+      cursor: none;
     }
     
     canvas { 
@@ -100,6 +101,17 @@
       pointer-events: auto;
       font-family: monospace;
     }
+
+      #customCursor {
+      position: fixed;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      pointer-events: none;
+      z-index: 999;
+      mix-blend-mode: difference;
+    }   
     
     #menuButton {
       top: 10px;
@@ -153,6 +165,10 @@
     </div>
     <div id="loadingText" class="loading-text">Загрузка ресурсов...</div>
   </div>
+
+
+<!-- Подключаем курсор -->
+  <div id="customCursor"></div>
   
   <!-- Подключаем основной скрипт игры -->
 
@@ -201,6 +217,14 @@
     // Подгоняем размер при загрузке и при ресайзе окна
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
+
+    // Кастомный курсор
+
+    document.addEventListener('mousemove', e => {
+    const cursor = document.getElementById('customCursor');
+    cursor.style.left = e.clientX + 'px';
+    cursor.style.top = e.clientY + 'px';
+    });
 
     // 🚀 Запускаем игру
     startGame();

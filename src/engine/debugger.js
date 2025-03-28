@@ -1,13 +1,23 @@
-let debugDiv = null;
-
-export function initDebugger() {
-  debugDiv = document.getElementById('debugger');
-  if (debugDiv) debugDiv.innerText = '[DEBUGGER READY]\n';
-}
+let enabled = true;
+let buffer = [];
+const maxLines = 30;
 
 export function debug(msg, type = 'log') {
-  if (!debugDiv) return;
-  const prefix = type === 'error' ? '[ERROR]' : '[LOG]';
-  debugDiv.innerText += `\n${prefix} ${msg}`;
-  debugDiv.scrollTop = debugDiv.scrollHeight;
+  if (!enabled) return;
+
+  const time = new Date().toLocaleTimeString();
+  const line = `[${time}] [${type.toUpperCase()}] ${msg}`;
+  console[type](line);
+
+  buffer.push(line);
+  if (buffer.length > maxLines) buffer.shift();
+
+  const div = document.getElementById('debugger');
+  if (div) {
+    div.innerText = buffer.join('\n');
+  }
+}
+
+export function toggleDebug(on) {
+  enabled = on;
 }
