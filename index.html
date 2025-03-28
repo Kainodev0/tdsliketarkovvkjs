@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TDS Extraction Game</title>
+  <style>
+    body { margin: 0; overflow: hidden; background: #111; font-family: monospace; }
+    canvas { display: block; background: #1e1e1e; }
+    #debugger {
+      position: absolute;
+      top: 0; left: 0;
+      padding: 6px;
+      background: rgba(0,0,0,0.6);
+      color: #0f0;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
+  <div id="debugger"></div>
+  <script type="module">
+    import { startGame } from './src/main.js';
+    startGame();
+  </script>
+</body>
+</html>
