@@ -26,7 +26,7 @@ export async function startGame() {
     debug('⏳ Загружаем ассеты...');
     await loadAssets();
     debug('✅ Ассеты загружены');
-    
+
     // Скрываем экран загрузки после завершения
 const loadingScreen = document.getElementById('loadingScreen');
 if (loadingScreen) loadingScreen.style.display = 'none';
@@ -57,6 +57,9 @@ debug('🗺️ Текущая сцена установлена: map');
 
     debug('🚀 Запускаем игровой цикл...');
     gameLoop();
+    
+    // Отключаем отладку после запуска
+window.debug = () => {};
 
   } catch (error) {
     debug(`❌ Критическая ошибка: ${error.message}`, 'error');
