@@ -116,25 +116,20 @@ export async function loadAssets() {
   
   // Список ресурсов для загрузки
   const imagesToLoad = [
-    { id: 'player', src: 'assets/sprites/player.png' },
-    { id: 'enemy', src: 'assets/sprites/enemy.png' },
-    { id: 'bullet', src: 'assets/sprites/bullet.png' },
-    { id: 'crate', src: 'assets/sprites/crate.png' },
-    { id: 'wall', src: 'assets/sprites/wall.png' },
-    { id: 'pistol', src: 'assets/sprites/weapons/pistol.png' },
-    { id: 'medkit', src: 'assets/sprites/items/medkit.png' }
-  ];
-  
-  const soundsToLoad = [
-    { id: 'gunshot', src: 'assets/audio/gunshot.mp3' },
-    { id: 'hit', src: 'assets/audio/hit.mp3' },
-    { id: 'pickup', src: 'assets/audio/pickup.mp3' }
-  ];
-  
-  const dataToLoad = [
-    { id: 'weapons', src: 'data/weapons.json' },
-    { id: 'items', src: 'data/items.json' },
-    { id: 'maps', src: 'data/maps.json' }
+    // Characters
+    { id: 'player', src: 'assets/sprites/characters/player.svg' },
+    { id: 'enemy', src: 'assets/sprites/characters/enemy.svg' },
+    { id: 'trader', src: 'assets/sprites/characters/trader.svg' },
+
+    // Weapons
+    { id: 'pistol', src: 'assets/sprites/weapons/pistol.svg' },
+    { id: 'shotgun', src: 'assets/sprites/weapons/shotgun.svg' },
+    { id: 'rifle', src: 'assets/sprites/weapons/rifle.svg' },
+
+    // Loot
+    { id: 'crate', src: 'assets/sprites/loot/crate.svg' },
+    { id: 'medkit', src: 'assets/sprites/loot/medkit.svg' },
+    { id: 'ammo_box', src: 'assets/sprites/loot/ammo_box.svg' }
   ];
   
   // Обновляем общее количество ресурсов

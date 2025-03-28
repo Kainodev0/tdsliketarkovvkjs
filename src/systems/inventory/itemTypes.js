@@ -23,7 +23,7 @@ export const ItemType = {
       size: { width: 2, height: 1 },
       value: 400,
       weaponType: 'pistol',
-      sprite: 'pistol',
+      sprite: 'pistol', // оставляем тот же идентификатор, что в assetLoader
       stackable: false
     },
     shotgun: {
