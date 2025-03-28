@@ -144,12 +144,12 @@ export async function loadAssets() {
     { id: 'player', src: `${base}../assets/sprites/characters/player.svg` },
     { id: 'enemy', src: `${base}../assets/sprites/characters/enemy.svg` },
     { id: 'trader', src: `${base}../assets/sprites/characters/trader.svg` },
-
+  
     // Weapons
-    { id: 'pistol', src: `${base}../assets/sprites/weapons/pistol.svg` }
+    { id: 'pistol', src: `${base}../assets/sprites/weapons/pistol.svg` },
     { id: 'shotgun', src: `${base}../assets/sprites/weapons/shotgun.svg` },
     { id: 'rifle', src: `${base}../assets/sprites/weapons/rifle.svg` },
-
+  
     // Loot
     { id: 'crate', src: `${base}../assets/sprites/loot/crate.svg` },
     { id: 'medkit', src: `${base}../assets/sprites/loot/medkit.svg` },
