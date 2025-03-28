@@ -11,9 +11,8 @@ window.gameState = { showInventory: false };
 
 export async function startGame() {
   try {
-    // Инициализируем отладчик как можно раньше
     initDebugger();
-    debug('Game initialization started...');
+    debug('📦 Инициализация игры...');
 
     const canvas = document.getElementById('gameCanvas');
     if (!canvas) {
@@ -21,26 +20,21 @@ export async function startGame() {
     }
     const ctx = canvas.getContext('2d');
 
-    // Настройка ввода
     setupInput(canvas);
-    debug('Input setup complete.');
+    debug('🎮 Управление готово');
 
-    // Загрузка ассетов
-    debug('Starting asset loading...');
-    const loadedAssets = await loadAssets();
-    debug('Assets loading completed.');
+    debug('⏳ Загружаем ассеты...');
+    await loadAssets();
+    debug('✅ Ассеты загружены');
 
-    // Отладочная информация об ассетах
     debugAssets();
 
-    // Добавляем начальные предметы в инвентарь игрока
     const startingItems = generateStartingGear();
     for (const item of startingItems) {
       const result = addItemToInventory(player.inventory, item);
-      debug(`Added starting item ${item.name}: ${result}`);
+      debug(`🎒 Добавлен предмет: ${item.name} → ${result}`);
     }
 
-    // Основной игровой цикл
     function gameLoop() {
       try {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -48,17 +42,15 @@ export async function startGame() {
         draw(ctx, player);
         requestAnimationFrame(gameLoop);
       } catch (err) {
-        debug(`Game loop error: ${err.message}`, 'error');
+        debug(`💥 Ошибка в gameLoop: ${err.message}`, 'error');
       }
     }
 
-    // Запуск игрового цикла
-    debug('Starting game loop...');
+    debug('🚀 Запускаем игровой цикл...');
     gameLoop();
 
   } catch (error) {
-    debug(`Critical game initialization error: ${error.message}`, 'error');
-    // Можно добавить визуальное оповещение пользователя
+    debug(`❌ Критическая ошибка: ${error.message}`, 'error');
     const debuggerDiv = document.getElementById('debugger');
     if (debuggerDiv) {
       debuggerDiv.innerHTML += `\n<span style="color: red;">Критическая ошибка: ${error.message}</span>`;
