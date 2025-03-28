@@ -4,6 +4,9 @@
 
 import { debug } from '../engine/debugger.js';
 
+// Получаем базовый путь к текущему модулю (для GitHub Pages)
+const base = new URL('.', import.meta.url).pathname;
+
 // Объект для хранения загруженных ресурсов
 export const assets = {
   images: {},
@@ -18,9 +21,9 @@ let loadedAssets = 0;
 // Добавляем пустые массивы
 const soundsToLoad = [];
 const dataToLoad = [
-  { id: 'items', src: 'src/data/items.json' },
-  { id: 'maps', src: 'src/data/maps.json' },
-  { id: 'weapons', src: 'src/data/weapons.json' }
+  { id: 'items', src: `${base}../data/items.json` },
+  { id: 'maps', src: `${base}../data/maps.json` },
+  { id: 'weapons', src: `${base}../data/weapons.json` }
 ];
 
 /**
@@ -138,19 +141,19 @@ export async function loadAssets() {
   // Список ресурсов для загрузки
   const imagesToLoad = [
     // Characters
-    { id: 'player', src: 'src/assets/sprites/characters/player.svg' },
-    { id: 'enemy', src: 'src/assets/sprites/characters/enemy.svg' },
-    { id: 'trader', src: 'src/assets/sprites/characters/trader.svg' },
+    { id: 'player', src: '${base}..assets/sprites/characters/player.svg' },
+    { id: 'enemy', src: '${base}..assets/sprites/characters/enemy.svg' },
+    { id: 'trader', src: '${base}..assets/sprites/characters/trader.svg' },
 
     // Weapons
-    { id: 'pistol', src: 'src/assets/sprites/weapons/pistol.svg' },
-    { id: 'shotgun', src: 'src/assets/sprites/weapons/shotgun.svg' },
-    { id: 'rifle', src: 'src/assets/sprites/weapons/rifle.svg' },
+    { id: 'pistol', src: '${base}..assets/sprites/weapons/pistol.svg' },
+    { id: 'shotgun', src: '${base}..assets/sprites/weapons/shotgun.svg' },
+    { id: 'rifle', src: '${base}..assets/sprites/weapons/rifle.svg' },
 
     // Loot
-    { id: 'crate', src: 'src/assets/sprites/loot/crate.svg' },
-    { id: 'medkit', src: 'src/assets/sprites/loot/medkit.svg' },
-    { id: 'ammo_box', src: 'src/assets/sprites/loot/ammo_box.svg' }
+    { id: 'crate', src: '${base}..assets/sprites/loot/crate.svg' },
+    { id: 'medkit', src: '${base}..assets/sprites/loot/medkit.svg' },
+    { id: 'ammo_box', src: '${base}..assets/sprites/loot/ammo_box.svg' }
   ];
   
   // Обновляем общее количество ресурсов
