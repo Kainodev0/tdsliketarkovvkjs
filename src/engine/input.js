@@ -1,7 +1,18 @@
 export const keys = {};
 
 export function setupInput(canvas) {
-  document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+  document.addEventListener('keydown', e => {
+    keys[e.key.toLowerCase()] = true;
+    
+    // Открываем/закрываем инвентарь по клавише Tab
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      if (window.gameState) {
+        window.gameState.showInventory = !window.gameState.showInventory;
+      }
+    }
+  });
+
   document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 
   canvas.addEventListener('mousemove', e => {

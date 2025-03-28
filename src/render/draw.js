@@ -1,4 +1,5 @@
 import { drawMap } from '../engine/map.js';
+import { drawInventory } from '../systems/inventory/inventoryUI.js';
 
 export function draw(ctx, player) {
   ctx.save();
@@ -24,4 +25,9 @@ export function draw(ctx, player) {
   ctx.restore();
 
   ctx.restore();
+
+  // Отрисовка инвентаря, если он открыт
+  if (window.gameState && window.gameState.showInventory) {
+    drawInventory(ctx, player.inventory);
+  }
 }

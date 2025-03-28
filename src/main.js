@@ -3,8 +3,10 @@ import { update } from './engine/update.js';
 import { draw } from './render/draw.js';
 import { debug, initDebugger } from './engine/debugger.js';
 import { player } from './engine/player.js';
+import { generateStartingGear, addItemToInventory } from './systems/inventory/index.js';
 
 window.player = player;
+window.gameState = { showInventory: false };
 
 export function startGame() {
   const canvas = document.getElementById('gameCanvas');
@@ -13,6 +15,12 @@ export function startGame() {
   initDebugger();
   setupInput(canvas);
   debug('Game initialized.');
+
+  // Добавляем начальные предметы в инвентарь игрока
+  const startingItems = generateStartingGear();
+  for (const item of startingItems) {
+    addItemToInventory(player.inventory, item);
+  }
 
   function gameLoop() {
     try {

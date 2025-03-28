@@ -2,7 +2,7 @@
  * Система загрузки игровых ресурсов (изображения, звуки, данные)
  */
 
-import { debug } from './debugger.js';
+import { debug } from '../engine/debugger.js';
 
 // Объект для хранения загруженных ресурсов
 export const assets = {
