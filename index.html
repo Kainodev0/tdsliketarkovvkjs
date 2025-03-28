@@ -145,57 +145,56 @@
   </div>
   
   <!-- Подключаем основной скрипт игры -->
-  <script type="module">
-    import { startGame } from './src/main.js';
-    
-    // При загрузке страницы определяем оптимальный размер canvas
-    window.addEventListener('DOMContentLoaded', () => {
-      const canvas = document.getElementById('gameCanvas');
-      
-      function resizeCanvas() {
-        const maxWidth = 1280;
-        const maxHeight = 720;
-        
-        // Определяем доступное пространство
-        const availableWidth = window.innerWidth;
-        const availableHeight = window.innerHeight;
-        
-        // Вычисляем соотношение сторон
-        const aspectRatio = maxWidth / maxHeight;
-        
-        // Определяем размеры канваса с сохранением соотношения сторон
-        let width, height;
-        
-        if (availableWidth / availableHeight > aspectRatio) {
-          // Ограничение по высоте
-          height = Math.min(maxHeight, availableHeight);
-          width = height * aspectRatio;
-        } else {
-          // Ограничение по ширине
-          width = Math.min(maxWidth, availableWidth);
-          height = width / aspectRatio;
-        }
-        
-        // Устанавливаем размеры canvas
-        canvas.width = maxWidth;  // Внутреннее разрешение фиксированное
-        canvas.height = maxHeight;
-        
-        // Физический размер на экране
-        canvas.style.width = `${width}px`;
-        canvas.style.height = `${height}px`;
+   
+<script type="module">
+  // Импортируем функцию запуска игры из основного модуля
+  import { startGame } from './src/main.js';
+
+  // Ждём полной загрузки DOM перед инициализацией
+  window.addEventListener('DOMContentLoaded', () => {
+    const canvas = document.getElementById('gameCanvas');
+
+    // Автоматически подстраиваем размер canvas под размер окна
+    function resizeCanvas() {
+      const maxWidth = 1280;
+      const maxHeight = 720;
+
+      // Получаем доступные размеры экрана
+      const availableWidth = window.innerWidth;
+      const availableHeight = window.innerHeight;
+
+      // Вычисляем соотношение сторон
+      const aspectRatio = maxWidth / maxHeight;
+
+      let width, height;
+
+      // Подбираем оптимальные размеры canvas
+      if (availableWidth / availableHeight > aspectRatio) {
+        // Ограничиваем по высоте
+        height = Math.min(maxHeight, availableHeight);
+        width = height * aspectRatio;
+      } else {
+        // Ограничиваем по ширине
+        width = Math.min(maxWidth, availableWidth);
+        height = width / aspectRatio;
       }
-      
-      // Запускаем изменение размера при загрузке и изменении окна
-      resizeCanvas();
-      window.addEventListener('resize', resizeCanvas);
-      
-      // Запускаем игру
-      startGame();
-    });
-  </script>
-  <script type="module">
-    import { startGame } from './src/main.js';
+
+      // Устанавливаем внутреннее разрешение (логика рендеринга)
+      canvas.width = maxWidth;
+      canvas.height = maxHeight;
+
+      // Визуально подгоняем размер под экран
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+    }
+
+    // Подгоняем размер при загрузке и при ресайзе окна
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // 🚀 Запускаем игру
     startGame();
-  </script>
+  });
+</script>
 </body>
 </html>
