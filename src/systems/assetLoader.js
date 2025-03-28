@@ -31,14 +31,17 @@ const dataToLoad = [
  */
 function loadImage(id, src) {
   return new Promise((resolve, reject) => {
+    debug(`Attempting to load image: ${id} from ${src}`);
     const img = new Image();
     img.onload = () => {
+      debug(`Successfully loaded image: ${id}`);
       assets.images[id] = img;
       loadedAssets++;
       updateLoadingProgress();
       resolve(img);
     };
-    img.onerror = () => {
+    img.onerror = (err) => {
+      debug(`Failed to load image: ${id}. Error: ${err}`, 'error');
       reject(new Error(`Не удалось загрузить изображение: ${src}`));
     };
     img.src = src;
@@ -53,14 +56,17 @@ function loadImage(id, src) {
  */
 function loadSound(id, src) {
   return new Promise((resolve, reject) => {
+    debug(`Attempting to load sound: ${id} from ${src}`);
     const audio = new Audio();
     audio.oncanplaythrough = () => {
+      debug(`Successfully loaded sound: ${id}`);
       assets.sounds[id] = audio;
       loadedAssets++;
       updateLoadingProgress();
       resolve(audio);
     };
-    audio.onerror = () => {
+    audio.onerror = (err) => {
+      debug(`Failed to load sound: ${id}. Error: ${err}`, 'error');
       reject(new Error(`Не удалось загрузить звук: ${src}`));
     };
     audio.src = src;
@@ -75,18 +81,25 @@ function loadSound(id, src) {
  * @returns {Promise} - Промис, разрешающийся при загрузке данных
  */
 function loadJSON(id, src) {
+  debug(`Attempting to load JSON: ${id} from ${src}`);
   return fetch(src)
     .then(response => {
       if (!response.ok) {
+        debug(`HTTP Error when loading JSON ${id}: ${response.status}`, 'error');
         throw new Error(`Ошибка HTTP: ${response.status}`);
       }
       return response.json();
     })
     .then(data => {
+      debug(`Successfully loaded JSON: ${id}`);
       assets.data[id] = data;
       loadedAssets++;
       updateLoadingProgress();
       return data;
+    })
+    .catch(error => {
+      debug(`Failed to load JSON: ${id}. Error: ${error.message}`, 'error');
+      throw error;
     });
 }
 
@@ -95,6 +108,8 @@ function loadJSON(id, src) {
  */
 function updateLoadingProgress() {
   const progress = Math.floor((loadedAssets / totalAssets) * 100);
+  
+  debug(`Loading progress: ${progress}% (${loadedAssets}/${totalAssets})`);
   
   // Обновление визуального индикатора загрузки
   const loadingBar = document.getElementById('loadingBar');
@@ -107,8 +122,6 @@ function updateLoadingProgress() {
   if (loadingText) {
     loadingText.textContent = `Загрузка ресурсов... ${progress}%`;
   }
-  
-  debug(`Loading progress: ${progress}% (${loadedAssets}/${totalAssets})`);
 }
 
 /**
@@ -143,6 +156,8 @@ export async function loadAssets() {
   // Обновляем общее количество ресурсов
   totalAssets = imagesToLoad.length + soundsToLoad.length + dataToLoad.length;
   
+  debug(`Total assets to load: ${totalAssets}`);
+  
   try {
     // Загружаем все изображения
     const imagePromises = imagesToLoad.map(img => loadImage(img.id, img.src));
@@ -156,7 +171,7 @@ export async function loadAssets() {
     const dataPromises = dataToLoad.map(data => loadJSON(data.id, data.src));
     
     // Ждем загрузки всех ресурсов
-    await Promise.all([
+    const loadedResources = await Promise.all([
       ...imagePromises,
       ...soundPromises,
       ...dataPromises
@@ -166,69 +181,14 @@ export async function loadAssets() {
     return assets;
     
   } catch (error) {
-    debug(`Error loading assets: ${error.message}`, 'error');
+    debug(`Critical error loading assets: ${error.message}`, 'error');
     throw error;
   }
 }
 
-/**
- * Получить загруженное изображение по ID
- * @param {string} id - Идентификатор изображения
- * @returns {HTMLImageElement} - Элемент изображения
- */
-export function getImage(id) {
-  if (!assets.images[id]) {
-    debug(`Image not found: ${id}`, 'error');
-    // Возвращаем заглушку вместо отсутствующего изображения
-    return createPlaceholderImage();
-  }
-  return assets.images[id];
-}
-
-/**
- * Получить загруженный звук по ID
- * @param {string} id - Идентификатор звука
- * @returns {HTMLAudioElement} - Аудио элемент
- */
-export function getSound(id) {
-  if (!assets.sounds[id]) {
-    debug(`Sound not found: ${id}`, 'error');
-    return null;
-  }
-  // Создаем копию звука для возможности одновременного воспроизведения
-  return assets.sounds[id].cloneNode();
-}
-
-/**
- * Получить загруженные данные по ID
- * @param {string} id - Идентификатор данных
- * @returns {Object} - Объект с данными
- */
-export function getData(id) {
-  if (!assets.data[id]) {
-    debug(`Data not found: ${id}`, 'error');
-    return null;
-  }
-  return assets.data[id];
-}
-
-/**
- * Создание изображения-заглушки
- * @returns {HTMLCanvasElement} - Canvas элемент с заглушкой
- */
-function createPlaceholderImage() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 32;
-  canvas.height = 32;
-  const ctx = canvas.getContext('2d');
-  
-  // Рисуем сетку
-  ctx.fillStyle = '#FF00FF'; // Ярко-розовый цвет для отсутствующих текстур
-  ctx.fillRect(0, 0, 32, 32);
-  
-  ctx.fillStyle = '#000000';
-  ctx.fillRect(0, 0, 16, 16);
-  ctx.fillRect(16, 16, 16, 16);
-  
-  return canvas;
+// Для отладки - добавляем функцию проверки загруженных ассетов
+export function debugAssets() {
+  debug('Loaded Images:', Object.keys(assets.images));
+  debug('Loaded Sounds:', Object.keys(assets.sounds));
+  debug('Loaded Data:', Object.keys(assets.data));
 }
