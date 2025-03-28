@@ -1,36 +1,49 @@
-import { debug } from '../engine/debugger.js';
-import { drawMap } from '../engine/map.js';
-import { drawInventory } from '../systems/inventory/inventoryUI.js';
+export const map = {
+  width: 1000,
+  height: 800,
+  tilesize: 40,
+  walls: [
+    // Внешние стены здания
+    { x: 100, y: 100, w: 600, h: 20 }, // верхняя
+    { x: 100, y: 480, w: 600, h: 20 }, // нижняя
+    { x: 100, y: 120, w: 20, h: 360 }, // левая
+    { x: 680, y: 120, w: 20, h: 360 }, // правая
 
-export function draw(ctx, player) {
-  debug('🖼️ draw() запущен — сцена: ' + (window.gameState?.scene || 'не задано'));
+    // Комната 1 (слева сверху)
+    { x: 120, y: 120, w: 200, h: 20 }, // верх
+    { x: 120, y: 280, w: 20, h: 160 }, // левая
+    { x: 300, y: 120, w: 20, h: 160 }, // правая
+    { x: 120, y: 260, w: 200, h: 20 }, // низ
 
-  ctx.save();
+    // Комната 2 (справа сверху)
+    { x: 340, y: 120, w: 320, h: 20 }, // верх
+    { x: 340, y: 260, w: 20, h: 160 }, // левая
+    { x: 640, y: 120, w: 20, h: 160 }, // правая
+    { x: 340, y: 260, w: 320, h: 20 }, // низ
 
-  const offsetX = player.x - ctx.canvas.width / 2;
-  const offsetY = player.y - ctx.canvas.height / 2;
-  ctx.translate(-offsetX, -offsetY);
+    // Комната 3 (снизу, разрушенная)
+    { x: 120, y: 300, w: 200, h: 20 }, // верх
+    { x: 120, y: 300, w: 20, h: 160 }, // левая
+    { x: 300, y: 300, w: 20, h: 80 }, // правая половина стены (разрушена)
+    { x: 120, y: 440, w: 200, h: 20 }  // низ
+  ],
 
-  drawMap(ctx);
+  loot: [
+    { id: 'crate', x: 160, y: 160 }, // Комната 1
+    { id: 'medkit', x: 380, y: 160 }, // Комната 2
+    { id: 'ammo_box', x: 160, y: 360 } // Комната 3 (разрушенная)
+  ]
+};
 
-  ctx.save();
-  ctx.translate(player.x, player.y);
-  ctx.rotate(player.angle);
-  ctx.fillStyle = player.color || '#4af';
-  ctx.beginPath();
-  ctx.arc(0, 0, player.radius, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = '#fff';
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.lineTo(player.radius + 10, 0);
-  ctx.stroke();
-  ctx.restore();
+export function drawMap(ctx) {
+  ctx.fillStyle = '#444';
+  for (const wall of map.walls) {
+    ctx.fillRect(wall.x, wall.y, wall.w, wall.h);
+  }
 
-  ctx.restore();
-
-  // Отрисовка инвентаря, если он открыт
-  if (window.gameState && window.gameState.showInventory) {
-    drawInventory(ctx, player.inventory);
+  // Отрисовка предметов лута
+  for (const item of map.loot) {
+    ctx.fillStyle = item.id === 'medkit' ? '#f00' : (item.id === 'crate' ? '#888' : '#0af');
+    ctx.fillRect(item.x - 10, item.y - 10, 20, 20);
   }
 }
