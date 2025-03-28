@@ -141,19 +141,19 @@ export async function loadAssets() {
   // Список ресурсов для загрузки
   const imagesToLoad = [
     // Characters
-    { id: 'player', src: '${base}..assets/sprites/characters/player.svg' },
-    { id: 'enemy', src: '${base}..assets/sprites/characters/enemy.svg' },
-    { id: 'trader', src: '${base}..assets/sprites/characters/trader.svg' },
+    { id: 'player', src: `${base}..assets/sprites/characters/player.svg` },
+    { id: 'enemy', src: `${base}..assets/sprites/characters/enemy.svg` },
+    { id: 'trader', src: `${base}..assets/sprites/characters/trader.svg` },
 
     // Weapons
-    { id: 'pistol', src: '${base}..assets/sprites/weapons/pistol.svg' },
-    { id: 'shotgun', src: '${base}..assets/sprites/weapons/shotgun.svg' },
-    { id: 'rifle', src: '${base}..assets/sprites/weapons/rifle.svg' },
+    { id: 'pistol', src: `${base}../assets/sprites/weapons/pistol.svg` }
+    { id: 'shotgun', src: `${base}..assets/sprites/weapons/shotgun.svg` },
+    { id: 'rifle', src: `${base}..assets/sprites/weapons/rifle.svg` },
 
     // Loot
-    { id: 'crate', src: '${base}..assets/sprites/loot/crate.svg' },
-    { id: 'medkit', src: '${base}..assets/sprites/loot/medkit.svg' },
-    { id: 'ammo_box', src: '${base}..assets/sprites/loot/ammo_box.svg' }
+    { id: 'crate', src: `${base}..assets/sprites/loot/crate.svg` },
+    { id: 'medkit', src: `${base}..assets/sprites/loot/medkit.svg` },
+    { id: 'ammo_box', src: `${base}..assets/sprites/loot/ammo_box.svg` }
   ];
   
   // Обновляем общее количество ресурсов
