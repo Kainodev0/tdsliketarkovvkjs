@@ -1,0 +1,9 @@
+{
+    "map1": {
+      "name": "Test Map",
+      "width": 1000,
+      "height": 1000,
+      "walls": []
+    }
+  }
+  

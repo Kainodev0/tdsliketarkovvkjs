@@ -1,0 +1,9 @@
+[
+    {
+      "id": "pistol",
+      "name": "Pistol",
+      "damage": 10,
+      "fireRate": 1
+    }
+  ]
+  
