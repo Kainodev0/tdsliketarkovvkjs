@@ -3,10 +3,12 @@ import { update } from './engine/update.js';
 import { draw } from './render/draw.js';
 import { debug, initDebugger, toggleDebug } from './engine/debugger.js';
 import { player } from './engine/player.js';
+import { map } from './engine/map.js'; // Import the map
 import { generateStartingGear, addItemToInventory } from './systems/inventory/index.js';
 import { loadAssets, debugAssets } from './systems/assetLoader.js';
 
 window.player = player;
+window.map = map; // Make map available globally
 window.gameState = { showInventory: false };
 
 export async function startGame() {
