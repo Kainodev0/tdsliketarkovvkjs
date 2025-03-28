@@ -1,12 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>TDS Extraction Game</title>
+  <title>PixelEscape | Выживи и добудь ценные ресурсы</title>
   <style>
-    body { margin: 0; overflow: hidden; background: #111; font-family: monospace; }
-    canvas { display: block; background: #1e1e1e; }
+    body { 
+      margin: 0; 
+      overflow: hidden; 
+      background: #111; 
+      font-family: monospace;
+      color: #eee;
+    }
+    
+    canvas { 
+      display: block; 
+      background: #1e1e1e; 
+      margin: 0 auto;
+      image-rendering: pixelated; /* Для пиксельной графики */
+    }
+    
     #debugger {
       position: absolute;
       top: 0; left: 0;
@@ -19,14 +32,164 @@
       white-space: pre-wrap;
       z-index: 10;
     }
+    
+    #loadingScreen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #000;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+    
+    .loading-bar-container {
+      width: 50%;
+      height: 20px;
+      background-color: #222;
+      border-radius: 10px;
+      margin-top: 20px;
+      overflow: hidden;
+    }
+    
+    #loadingBar {
+      width: 0%;
+      height: 100%;
+      background-color: #5c7;
+      border-radius: 10px;
+      transition: width 0.3s;
+    }
+    
+    .loading-text {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #999;
+    }
+    
+    .game-title {
+      font-size: 32px;
+      margin-bottom: 20px;
+      color: #5c7;
+      text-shadow: 0 0 10px rgba(92, 204, 119, 0.5);
+    }
+    
+    #gameUI {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+    
+    .ui-button {
+      position: absolute;
+      padding: 8px 16px;
+      background-color: rgba(0, 0, 0, 0.7);
+      border: 1px solid #5c7;
+      border-radius: 4px;
+      color: #5c7;
+      cursor: pointer;
+      pointer-events: auto;
+      font-family: monospace;
+    }
+    
+    #menuButton {
+      top: 10px;
+      right: 10px;
+    }
+    
+    #inventoryButton {
+      bottom: 10px;
+      right: 10px;
+    }
+    
+    /* Для максимальной адаптивности в мобильных устройствах */
+    @media (max-width: 768px) {
+      .loading-bar-container {
+        width: 80%;
+      }
+      
+      .game-title {
+        font-size: 24px;
+      }
+    }
   </style>
 </head>
 <body>
-  <canvas id="gameCanvas" width="800" height="600"></canvas>
+  <!-- Основной Canvas для игры -->
+  <canvas id="gameCanvas"></canvas>
+  
+  <!-- Отладчик -->
   <div id="debugger"></div>
+  
+  <!-- Пользовательский интерфейс -->
+  <div id="gameUI">
+    <button id="menuButton" class="ui-button">Меню</button>
+    <button id="inventoryButton" class="ui-button">Инвентарь (Tab)</button>
+  </div>
+  
+  <!-- Экран загрузки -->
+  <div id="loadingScreen">
+    <h1 class="game-title">PixelEscape</h1>
+    <div class="loading-bar-container">
+      <div id="loadingBar"></div>
+    </div>
+    <div id="loadingText" class="loading-text">Загрузка ресурсов...</div>
+  </div>
+  
+  <!-- Подключаем основной скрипт игры -->
   <script type="module">
     import { startGame } from './src/main.js';
-    startGame();
+    
+    // При загрузке страницы определяем оптимальный размер canvas
+    window.addEventListener('DOMContentLoaded', () => {
+      const canvas = document.getElementById('gameCanvas');
+      
+      function resizeCanvas() {
+        const maxWidth = 1280;
+        const maxHeight = 720;
+        
+        // Определяем доступное пространство
+        const availableWidth = window.innerWidth;
+        const availableHeight = window.innerHeight;
+        
+        // Вычисляем соотношение сторон
+        const aspectRatio = maxWidth / maxHeight;
+        
+        // Определяем размеры канваса с сохранением соотношения сторон
+        let width, height;
+        
+        if (availableWidth / availableHeight > aspectRatio) {
+          // Ограничение по высоте
+          height = Math.min(maxHeight, availableHeight);
+          width = height * aspectRatio;
+        } else {
+          // Ограничение по ширине
+          width = Math.min(maxWidth, availableWidth);
+          height = width / aspectRatio;
+        }
+        
+        // Устанавливаем размеры canvas
+        canvas.width = maxWidth;  // Внутреннее разрешение фиксированное
+        canvas.height = maxHeight;
+        
+        // Физический размер на экране
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+      }
+      
+      // Запускаем изменение размера при загрузке и изменении окна
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+      
+      // Запускаем игру
+      startGame();
+    });
   </script>
 </body>
-</html>
