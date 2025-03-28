@@ -1,5 +1,5 @@
 import { debug } from '../engine/debugger.js';
-import { drawMap } from '../engine/map.js';
+import { drawMap, map } from '../engine/map.js';
 import { drawInventory } from '../systems/inventory/inventoryUI.js';
 import { getVisibleTiles, drawFog } from '../systems/visionSystem.js';
 
@@ -30,7 +30,8 @@ export function draw(ctx, player) {
   ctx.restore();
 
   // 3. Система видимости (fog of war)
-  const visible = getVisibleTiles(player, window.map);
+  // Используем напрямую импортированный map, а не window.map
+  const visible = getVisibleTiles(player, map);
   drawFog(ctx, visible);
 
   ctx.restore();

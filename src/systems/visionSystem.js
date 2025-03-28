@@ -3,8 +3,14 @@ let visionCache = null;
 let lastPlayerX = null;
 let lastPlayerY = null;
 
+// Импортируем map напрямую, чтобы не зависеть от window.map
+import { map } from '../engine/map.js';
+
 // Функция расчёта видимых точек вокруг игрока
-export function getVisibleTiles(player, map, viewDistance = 200) {
+export function getVisibleTiles(player, customMap, viewDistance = 200) {
+  // Используем переданную карту или дефолтную, импортированную сверху
+  const currentMap = customMap || map;
+  
   // Если координаты игрока не изменились — возвращаем кэш
   if (
     visionCache &&
@@ -32,15 +38,18 @@ export function getVisibleTiles(player, map, viewDistance = 200) {
       visible.push({ x, y }); // Добавляем точку в массив видимых
 
       // Если луч пересекается со стеной — останавливаем его
-      for (const wall of map.walls) {
-        if (
-          x > wall.x &&
-          x < wall.x + wall.w &&
-          y > wall.y &&
-          y < wall.y + wall.h
-        ) {
-          d = viewDistance; // выходим из цикла
-          break;
+      // Проверяем наличие и стен в карте
+      if (currentMap && currentMap.walls) {
+        for (const wall of currentMap.walls) {
+          if (
+            x > wall.x &&
+            x < wall.x + wall.w &&
+            y > wall.y &&
+            y < wall.y + wall.h
+          ) {
+            d = viewDistance; // выходим из цикла
+            break;
+          }
         }
       }
     }
