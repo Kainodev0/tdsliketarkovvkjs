@@ -1,19 +1,27 @@
 let enabled = true; // Флаг включения отладки
 let buffer = []; // Буфер логов
-const maxLines = 30; // Максимум строк в окне отладки
+const maxLines = 30; // Максимальное количество строк в выводе
 
 /**
- * Логирование сообщений в консоль и в отладочный блок на экране
- * @param {string} msg - Сообщение для вывода
- * @param {string} [type='log'] - Уровень сообщения ('log', 'warn', 'error')
+ * Логирование сообщений в консоль и в элемент #debugger
+ * @param {string} msg - Сообщение
+ * @param {string} [type='log'] - Тип сообщения: log | warn | error
  */
 export function debug(msg, type = 'log') {
   if (!enabled) return;
 
   const time = new Date().toLocaleTimeString();
 
-  // Безопасно преобразуем тип логирования в верхний регистр
-  const level = typeof type === 'string' ? type.toUpperCase() : 'LOG';
+  // Безопасное определение типа
+  let level = 'LOG';
+  try {
+    if (typeof type === 'string') {
+      level = type.toUpperCase();
+    }
+  } catch {
+    level = 'LOG';
+  }
+
   const line = `[${time}] [${level}] ${msg}`;
 
   // Безопасный вывод в консоль
@@ -27,7 +35,7 @@ export function debug(msg, type = 'log') {
     console.log(line);
   }
 
-  // Обновление буфера и вывода в HTML
+  // Обновление буфера и отображение
   buffer.push(line);
   if (buffer.length > maxLines) buffer.shift();
 
@@ -38,7 +46,7 @@ export function debug(msg, type = 'log') {
 }
 
 /**
- * Инициализация отладчика (выводится при старте игры)
+ * Инициализация отладчика
  */
 export function initDebugger() {
   const div = document.getElementById('debugger');
@@ -48,9 +56,9 @@ export function initDebugger() {
 }
 
 /**
- * Включение или отключение логирования
- * @param {boolean} on - true = включить, false = выключить
+ * Включение или отключение вывода логов
+ * @param {boolean} on
  */
 export function toggleDebug(on) {
-  enabled = on;
+  enabled = !!on;
 }
