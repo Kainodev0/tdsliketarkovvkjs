@@ -26,6 +26,10 @@ export async function startGame() {
     debug('⏳ Загружаем ассеты...');
     await loadAssets();
     debug('✅ Ассеты загружены');
+    
+    // Скрываем экран загрузки после завершения
+const loadingScreen = document.getElementById('loadingScreen');
+if (loadingScreen) loadingScreen.style.display = 'none';
 
     debugAssets();
 
