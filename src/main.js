@@ -29,11 +29,16 @@ export async function startGame() {
 
     debugAssets();
 
-    const startingItems = generateStartingGear();
-    for (const item of startingItems) {
-      const result = addItemToInventory(player.inventory, item);
-      debug(`🎒 Добавлен предмет: ${item.name} → ${result}`);
-    }
+const startingItems = generateStartingGear();
+for (const item of startingItems) {
+  const result = addItemToInventory(player.inventory, item);
+  debug(`Added starting item ${item.name}: ${result}`);
+}
+
+// Устанавливаем стартовую сцену
+window.gameState.scene = 'map';
+debug('🗺️ Текущая сцена установлена: map');
+
 
     function gameLoop() {
       try {

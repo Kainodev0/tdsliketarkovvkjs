@@ -1,7 +1,10 @@
+import { debug } from '../engine/debugger.js';
 import { drawMap } from '../engine/map.js';
 import { drawInventory } from '../systems/inventory/inventoryUI.js';
 
 export function draw(ctx, player) {
+  debug('🖼️ draw() запущен — сцена: ' + (window.gameState?.scene || 'не задано'));
+
   ctx.save();
 
   const offsetX = player.x - ctx.canvas.width / 2;
