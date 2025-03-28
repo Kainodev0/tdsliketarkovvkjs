@@ -106,6 +106,15 @@
       right: 10px;
     }
     
+    #debugButton {
+      top: 50px;
+      right: 10px;
+    }
+
+    #debugger.collapsed {
+      display: none;
+    }
+  
     #inventoryButton {
       bottom: 10px;
       right: 10px;
@@ -127,12 +136,13 @@
   <canvas id="gameCanvas"></canvas>
   
   <!-- Отладчик -->
-  <div id="debugger"></div>
+  <div id="debugger" class="collapsed"></div>
   
   <!-- Пользовательский интерфейс -->
   <div id="gameUI">
     <button id="menuButton" class="ui-button">Меню</button>
     <button id="inventoryButton" class="ui-button">Инвентарь (Tab)</button>
+    <button id="debugButton" class="ui-button">Отладка</button>
   </div>
   
   <!-- Экран загрузки -->
@@ -145,7 +155,7 @@
   </div>
   
   <!-- Подключаем основной скрипт игры -->
-   
+
 <script type="module">
   // Импортируем функцию запуска игры из основного модуля
   import { startGame } from './src/main.js';
@@ -194,6 +204,9 @@
 
     // 🚀 Запускаем игру
     startGame();
+    document.getElementById('debugButton').addEventListener('click', () => {
+  const dbg = document.getElementById('debugger');
+  dbg.classList.toggle('collapsed');
   });
 </script>
 </body>
