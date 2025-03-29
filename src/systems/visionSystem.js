@@ -1,5 +1,5 @@
 // src/systems/visionSystem.js
-// Упрощенная система видимости
+// Полностью переработанная система видимости
 
 import { map } from '../engine/map.js';
 import { debug } from '../engine/debugger.js';
@@ -114,67 +114,26 @@ export function isPointVisible(point, visibilityData) {
 }
 
 /**
- * Применяет эффект видимости (черно-белая область вне конуса)
- * Самая простая реализация, которая точно должна работать
+ * Проверяет, находится ли точка внутри конуса видимости
+ * Отдельная функция для проверки точки в экранных координатах
+ */
+export function isScreenPointInVisionCone(x, y, visibilityData, cameraOffsetX, cameraOffsetY) {
+  // Переводим точку в мировые координаты
+  const worldX = x + cameraOffsetX;
+  const worldY = y + cameraOffsetY;
+  
+  // Используем существующую функцию проверки
+  return isPointVisible({x: worldX, y: worldY}, visibilityData);
+}
+
+/**
+ * Применяет эффект видимости
+ * ВАЖНО: Этот метод НЕ ИСПОЛЬЗУЕТСЯ в новой реализации
+ * Оставлен для совместимости с существующим кодом
  */
 export function applyVisionEffect(ctx, visibilityData) {
-  if (!visibilityData || !visibilityData.points || visibilityData.points.length < 3) {
-    return;
-  }
-  
-  try {
-    // Размеры canvas
-    const width = ctx.canvas.width;
-    const height = ctx.canvas.height;
-    
-    // Координаты камеры (смещение от игрока)
-    const cameraOffsetX = visibilityData.coneTip.x - width / 2;
-    const cameraOffsetY = visibilityData.coneTip.y - height / 2;
-    
-    // Сохраняем текущее состояние контекста
-    ctx.save();
-    
-    // Создаем затемняющий прямоугольник на весь экран
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-    ctx.fillRect(0, 0, width, height);
-    
-    // Вырезаем конус видимости методом "вычитания"
-    ctx.globalCompositeOperation = 'destination-out';
-    
-    // Рисуем конус видимости (полная прозрачность)
-    ctx.fillStyle = 'rgba(255, 255, 255, 1)';
-    ctx.beginPath();
-    
-    // Первая точка - позиция игрока на экране
-    const screenPlayerX = visibilityData.coneTip.x - cameraOffsetX;
-    const screenPlayerY = visibilityData.coneTip.y - cameraOffsetY;
-    
-    ctx.moveTo(screenPlayerX, screenPlayerY);
-    
-    // Рисуем контур конуса
-    for (let i = 1; i < visibilityData.points.length; i++) {
-      const point = visibilityData.points[i];
-      const screenX = point.x - cameraOffsetX;
-      const screenY = point.y - cameraOffsetY;
-      ctx.lineTo(screenX, screenY);
-    }
-    
-    ctx.closePath();
-    ctx.fill();
-    
-    // Рисуем маленький круг непосредственно вокруг игрока (ближнее зрение)
-    ctx.beginPath();
-    ctx.arc(screenPlayerX, screenPlayerY, 50, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // Восстанавливаем контекст
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.restore();
-    
-  } catch (error) {
-    debug(`Ошибка в applyVisionEffect: ${error.message}`, "error");
-    console.error(error);
-  }
+  // Ничего не делаем, эффект применяется иначе
+  return;
 }
 
 // Сбросить кеш
