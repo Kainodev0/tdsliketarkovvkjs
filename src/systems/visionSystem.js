@@ -1,3 +1,6 @@
+// src/systems/visionSystem.js
+// Improved vision system with Darkwood-style effect
+
 // Кэш видимых точек и координаты последнего положения игрока
 let visionCache = null;
 let lastPlayerX = null;
@@ -35,7 +38,9 @@ function castRay(startX, startY, angle, maxDistance, currentMap) {
     // Проверяем пересечение со стенами
     if (currentMap && currentMap.walls) {
       for (const wall of currentMap.walls) {
-        if (x > wall.x && x < wall.x + wall.w && 
+        // Проверяем только стены без вращения для упрощения
+        if (!wall.rotation && 
+            x > wall.x && x < wall.x + wall.w && 
             y > wall.y && y < wall.y + wall.h) {
           // Луч пересёкся со стеной, возвращаем точку пересечения
           return { 
@@ -68,10 +73,10 @@ function castRay(startX, startY, angle, maxDistance, currentMap) {
  * @param {Object} player - Объект игрока
  * @param {Object} customMap - Карта (опционально)
  * @param {number} viewDistance - Максимальная дистанция видимости
- * @param {number} coneAngle - Угол конуса видимости в радианах (по умолчанию 1.4 ≈ 80 градусов)
+ * @param {number} coneAngle - Угол конуса видимости в радианах (по умолчанию 2.0 ≈ 115 градусов)
  * @returns {Object} - Объект с точками для конуса видимости
  */
-export function getVisibleTiles(player, customMap, viewDistance = 400, coneAngle = 1.4) {
+export function getVisibleTiles(player, customMap, viewDistance = 500, coneAngle = 2.0) {
   // Используем переданную карту или дефолтную
   const currentMap = customMap || map;
   
@@ -86,7 +91,7 @@ export function getVisibleTiles(player, customMap, viewDistance = 400, coneAngle
   const startTime = performance.now();
   
   // Создаём конус видимости
-  const rayCount = 32; // Увеличиваем количество лучей для более гладкого конуса
+  const rayCount = 40; // Увеличиваем количество лучей для более гладкого конуса
   const halfCone = coneAngle / 2;
   
   // Начальная позиция игрока
@@ -156,7 +161,7 @@ export function isPointVisible(point, visibilityData) {
   }
   
   // Если точка очень близко к игроку - она всегда видима
-  const nearSightRadius = 20;
+  const nearSightRadius = 40; // Увеличен для лучшей видимости вблизи игрока
   if (distance < nearSightRadius) {
     return true;
   }
@@ -181,79 +186,113 @@ export function isPointVisible(point, visibilityData) {
   }
   
   // Проверяем, находится ли точка в конусе видимости
-  return angleDiff <= visibilityData.coneAngle / 2;
+  if (angleDiff <= visibilityData.coneAngle / 2) {
+    // Проверяем, нет ли стены между игроком и точкой
+    // Для этого бросаем луч от игрока к точке
+    const rayToPoint = castRay(
+      visibilityData.coneTip.x,
+      visibilityData.coneTip.y,
+      angle,
+      distance,
+      map
+    );
+    
+    // Если луч пересекся со стеной до достижения точки,
+    // то точка не видима
+    const distToHit = Math.sqrt(
+      Math.pow(rayToPoint.x - visibilityData.coneTip.x, 2) +
+      Math.pow(rayToPoint.y - visibilityData.coneTip.y, 2)
+    );
+    
+    return distToHit >= distance - 2; // Небольшой запас для погрешности
+  }
+  
+  return false;
 }
 
 /**
- * Создаёт маску видимости для области видимости игрока
+ * Применяет эффект видимости в стиле Darkwood к сцене
  * @param {CanvasRenderingContext2D} ctx - Контекст рисования
  * @param {Object} visibilityData - Данные о видимости
  */
-export function createVisionMask(ctx, visibilityData) {
+export function applyVisionEffect(ctx, visibilityData) {
+  // Без данных о видимости ничего не делаем
   if (!visibilityData || !visibilityData.points || visibilityData.points.length < 3) {
     return;
   }
   
-  // Очищаем всё существующее в контексте
-  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-  
-  // Создаём путь для конуса видимости
-  ctx.beginPath();
-  ctx.moveTo(visibilityData.coneTip.x, visibilityData.coneTip.y);
-  
-  // Добавляем все точки конуса
-  for (let i = 1; i < visibilityData.points.length; i++) {
-    ctx.lineTo(visibilityData.points[i].x, visibilityData.points[i].y);
-  }
-  
-  // Замыкаем контур
-  ctx.closePath();
-  
-  // Заливаем весь конус белым цветом (для создания маски)
-  ctx.fillStyle = '#fff';
-  ctx.fill();
-  
-  // Добавляем небольшую круговую область вокруг игрока
-  ctx.beginPath();
-  ctx.arc(visibilityData.coneTip.x, visibilityData.coneTip.y, 20, 0, Math.PI * 2);
-  ctx.fill();
-}
-
-/**
- * Отрисовка сцены с применением системы видимости в стиле Darkwood
- * Эта функция вызывается из draw.js и заменяет предыдущие функции drawFog
- * @param {CanvasRenderingContext2D} ctx - Основной контекст рисования
- * @param {Object} visibilityData - Данные о видимости
- */
-export function applyVisionEffect(ctx, visibilityData) {
-  // Общий размер канваса
   const { width, height } = ctx.canvas;
   
-  // Создаём временный канвас для хранения маски видимости
+  // 1. Сохраняем текущую сцену (цветную)
+  const originalScene = ctx.getImageData(0, 0, width, height);
+  
+  // 2. Создаем серую версию сцены
+  const grayscaleScene = ctx.getImageData(0, 0, width, height);
+  const grayscaleData = grayscaleScene.data;
+  
+  // Преобразуем все пиксели в grayscale
+  for (let i = 0; i < grayscaleData.length; i += 4) {
+    const r = grayscaleData[i];
+    const g = grayscaleData[i + 1];
+    const b = grayscaleData[i + 2];
+    
+    // Формула для преобразования в оттенки серого
+    const gray = 0.3 * r + 0.59 * g + 0.11 * b;
+    
+    // Затемняем серую область для лучшего контраста
+    const darkGray = gray * 0.3;
+    
+    grayscaleData[i] = darkGray;     // R
+    grayscaleData[i + 1] = darkGray; // G
+    grayscaleData[i + 2] = darkGray; // B
+    // Не меняем alpha канал
+  }
+  
+  // 3. Рисуем ч/б версию сцены
+  ctx.putImageData(grayscaleScene, 0, 0);
+  
+  // 4. Создаем маску для области видимости
   const maskCanvas = document.createElement('canvas');
   maskCanvas.width = width;
   maskCanvas.height = height;
   const maskCtx = maskCanvas.getContext('2d');
   
-  // Создаём маску видимости
-  createVisionMask(maskCtx, visibilityData);
+  // Черный фон для маски
+  maskCtx.fillStyle = 'black';
+  maskCtx.fillRect(0, 0, width, height);
   
-  // Затемняем всю область за пределами конуса видимости
+  // Рисуем белый конус видимости на маске
+  maskCtx.fillStyle = 'white';
+  
+  // Конус видимости
+  maskCtx.beginPath();
+  maskCtx.moveTo(visibilityData.coneTip.x, visibilityData.coneTip.y);
+  
+  for (let i = 1; i < visibilityData.points.length; i++) {
+    maskCtx.lineTo(visibilityData.points[i].x, visibilityData.points[i].y);
+  }
+  
+  maskCtx.closePath();
+  maskCtx.fill();
+  
+  // Добавляем круговую область вокруг игрока
+  maskCtx.beginPath();
+  maskCtx.arc(visibilityData.coneTip.x, visibilityData.coneTip.y, 40, 0, Math.PI * 2);
+  maskCtx.fill();
+  
+  // 5. Рисуем цветную сцену через маску только в области видимости
   ctx.save();
-  ctx.globalCompositeOperation = 'destination-out';
+  
+  // Используем маску как источник непрозрачности
+  ctx.globalCompositeOperation = 'destination-in';
   ctx.drawImage(maskCanvas, 0, 0);
-  ctx.restore();
   
-  // Область за пределами конуса видимости становится черно-белой и темной
-  ctx.save();
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.drawImage(ctx.canvas, 0, 0);  // Сохраняем предыдущий рендер
   
-  // Рисуем полупрозрачный чёрный слой поверх всего экрана
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.95)';
-  ctx.fillRect(0, 0, width, height);
-  
-  // Вырезаем область видимости из темного слоя
-  ctx.globalCompositeOperation = 'destination-out';
-  ctx.drawImage(maskCanvas, 0, 0);
+  // Возвращаем цветные области
+  ctx.globalCompositeOperation = 'source-atop';
+  ctx.putImageData(originalScene, 0, 0);
   
   ctx.restore();
 }
