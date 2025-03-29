@@ -1,95 +1,85 @@
 // src/engine/input.js
+// Максимально простая версия системы ввода
+
 import { debug } from './debugger.js';
 
-// Объект для отслеживания нажатых клавиш
-export const keys = {};
-export const mouse = { x: 0, y: 0 }; // Глобальная позиция мыши в мировых координатах
+// Состояние клавиш
+export const keys = {
+  w: false,
+  a: false,
+  s: false,
+  d: false,
+  arrowup: false,
+  arrowdown: false,
+  arrowleft: false,
+  arrowright: false
+};
+
+// Позиция мыши в мировых координатах
+export const mouse = { x: 0, y: 0 };
 
 /**
  * Настраивает обработчики ввода
- * @param {HTMLCanvasElement} canvas - Элемент canvas для отслеживания мыши
  */
 export function setupInput(canvas) {
-  // Отладочное сообщение
-  debug("Инициализация системы ввода");
+  debug("🎮 Инициализация системы ввода");
   
   // Обработчик нажатия клавиш
-  document.addEventListener('keydown', e => {
-    // Сохраняем состояние клавиши в нижнем регистре
-    keys[e.key.toLowerCase()] = true;
-    debug(`Клавиша нажата: ${e.key.toLowerCase()}`);
-
-    // Открываем/закрываем инвентарь по клавише Tab
-    if (e.key === 'Tab') {
-      e.preventDefault(); // Предотвращаем стандартное поведение Tab
-      if (window.gameState) {
-        window.gameState.showInventory = !window.gameState.showInventory;
-        debug(`Инвентарь ${window.gameState.showInventory ? 'открыт' : 'закрыт'}`);
-      }
+  document.addEventListener('keydown', function(e) {
+    const key = e.key.toLowerCase();
+    keys[key] = true;
+    debug(`Клавиша нажата: ${key}`);
+    
+    // Tab для инвентаря
+    if (key === 'tab') {
+      e.preventDefault();
+      window.gameState.showInventory = !window.gameState.showInventory;
     }
   });
-
+  
   // Обработчик отпускания клавиш
-  document.addEventListener('keyup', e => {
-    keys[e.key.toLowerCase()] = false;
-    debug(`Клавиша отпущена: ${e.key.toLowerCase()}`);
+  document.addEventListener('keyup', function(e) {
+    const key = e.key.toLowerCase();
+    keys[key] = false;
+    debug(`Клавиша отпущена: ${key}`);
   });
-
-  // Проверка, существует ли canvas
+  
+  // Проверка canvas
   if (!canvas) {
-    debug("ОШИБКА: Canvas не найден при инициализации управления", "error");
+    debug("❌ Canvas не найден!", "error");
     return;
   }
-
+  
   // Обработчик движения мыши
-  canvas.addEventListener('mousemove', e => {
+  canvas.addEventListener('mousemove', function(e) {
+    // Получаем размеры и позицию canvas
     const rect = canvas.getBoundingClientRect();
-
-    // Получаем координаты мыши относительно canvas
-    const screenX = e.clientX - rect.left;
-    const screenY = e.clientY - rect.top;
-
-    // Учитываем масштабирование canvas
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
     
-    // Скорректированные координаты с учетом масштаба
-    const scaledX = screenX * scaleX;
-    const scaledY = screenY * scaleY;
-
-    // Центр канваса (экранные координаты)
-    const canvasCenterX = canvas.width / 2;
-    const canvasCenterY = canvas.height / 2;
-
-    const player = window.player;
-    if (player) {
-      // Учёт смещения камеры
-      mouse.x = player.x + (scaledX - canvasCenterX);
-      mouse.y = player.y + (scaledY - canvasCenterY);
-
-      // Обновляем угол поворота игрока
-      player.angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
+    // Позиция мыши на canvas с учетом масштабирования
+    const canvasX = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const canvasY = (e.clientY - rect.top) * (canvas.height / rect.height);
+    
+    // Если игрок существует
+    if (window.player) {
+      // Преобразуем в мировые координаты (с учетом положения камеры)
+      const cameraOffsetX = window.player.x - canvas.width / 2;
+      const cameraOffsetY = window.player.y - canvas.height / 2;
       
-      // Временно отключаем отладочный вывод для уменьшения спама
-      // debug(`Мышь: screen(${screenX}, ${screenY}), world(${mouse.x}, ${mouse.y}), угол: ${player.angle.toFixed(2)}`);
+      mouse.x = canvasX + cameraOffsetX;
+      mouse.y = canvasY + cameraOffsetY;
+      
+      // Обновляем угол поворота игрока (направление взгляда)
+      window.player.angle = Math.atan2(mouse.y - window.player.y, mouse.x - window.player.x);
     }
   });
   
-  // Обработчик клика мышью
-  canvas.addEventListener('click', e => {
-    debug(`Клик мышью в координатах world(${mouse.x.toFixed(0)}, ${mouse.y.toFixed(0)})`);
-    
-    // Здесь можно добавить логику взаимодействия с объектами
-  });
-  
-  // Добавляем обработчик события потери фокуса окном
-  window.addEventListener('blur', () => {
-    // Сбрасываем все клавиши, чтобы избежать "залипания"
-    Object.keys(keys).forEach(key => {
+  // Обработчик потери фокуса - сбрасываем все клавиши
+  window.addEventListener('blur', function() {
+    for (const key in keys) {
       keys[key] = false;
-    });
-    debug("Сброс состояния клавиш из-за потери фокуса окном");
+    }
+    debug("Сброс состояния клавиш (потеря фокуса)");
   });
   
-  debug("Система ввода инициализирована успешно");
+  debug("✅ Система ввода инициализирована");
 }

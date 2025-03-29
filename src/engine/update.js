@@ -1,36 +1,31 @@
 // src/engine/update.js
+// Максимально простая система движения
+
 import { keys } from './input.js';
 import { map } from './map.js';
-import { updateProjectiles } from '../systems/weaponSystem.js';
-import { invalidateVisionCache } from '../systems/visionSystem.js';
 import { debug } from './debugger.js';
+import { invalidateVisionCache } from '../systems/visionSystem.js';
 
 /**
- * Проверяет коллизию точки со стеной
- * @param {number} x - X координата
- * @param {number} y - Y координата
- * @param {number} radius - Радиус объекта
- * @returns {boolean} - Происходит ли коллизия
+ * Проверяет столкновения с границами карты и стенами
  */
-function isCollidingWithWalls(x, y, radius) {
-  // Если карты нет, считаем что коллизии нет
-  if (!map || !map.walls) {
-    debug("Ошибка: карта не найдена в isCollidingWithWalls", "error");
-    return false;
-  }
+function checkCollision(x, y, radius) {
+  // Если карты нет - нет и коллизий
+  if (!map || !map.walls) return false;
   
+  // Проверяем столкновения со стенами
   for (const wall of map.walls) {
-    // Проверяем пересечение окружности со стеной
+    // Находим ближайшую к игроку точку стены
     const closestX = Math.max(wall.x, Math.min(x, wall.x + wall.w));
     const closestY = Math.max(wall.y, Math.min(y, wall.y + wall.h));
     
-    // Вычисляем расстояние между ближайшей точкой и центром игрока
-    const distanceX = x - closestX;
-    const distanceY = y - closestY;
-    const distanceSquared = distanceX * distanceX + distanceY * distanceY;
+    // Расстояние от этой точки до центра игрока
+    const distX = x - closestX;
+    const distY = y - closestY;
+    const distSquared = distX * distX + distY * distY;
     
-    // Если расстояние меньше радиуса игрока, то коллизия происходит
-    if (distanceSquared <= radius * radius) {
+    // Если расстояние меньше радиуса - коллизия
+    if (distSquared < radius * radius) {
       return true;
     }
   }
@@ -39,77 +34,61 @@ function isCollidingWithWalls(x, y, radius) {
 }
 
 /**
- * Главная функция обновления состояния игры
- * @param {Object} player - Объект игрока
+ * Обновляет состояние игры
  */
 export function update(player) {
-  // Проверки на существование объекта игрока
+  // Проверяем наличие игрока
   if (!player) {
-    debug("Ошибка: объект player не определён", "error");
+    debug("❌ Игрок не определен!", "error");
     return;
   }
   
-  // Установим скорость движения, если она не определена
+  // Устанавливаем скорость, если она не определена
   if (typeof player.speed !== 'number' || isNaN(player.speed)) {
-    player.speed = 5; // Установим нормальную скорость
-    debug("Скорость игрока не была определена, установлено значение: " + player.speed);
+    player.speed = 5;
+    debug("⚠️ Скорость игрока не была определена, установлено значение: 5");
   }
   
-  // Сохраняем старые координаты для последующего сравнения
-  const oldX = player.x;
-  const oldY = player.y;
+  // Запоминаем начальное положение для отслеживания изменений
+  const startX = player.x;
+  const startY = player.y;
   
-  // Добавим отладочную информацию о состоянии клавиш
-  debug(`Клавиши: W:${!!keys['w']}, A:${!!keys['a']}, S:${!!keys['s']}, D:${!!keys['d']}`);
+  // Определяем направление движения
+  let dx = 0;
+  let dy = 0;
   
-  // Вектор движения
-  let moveX = 0;
-  let moveY = 0;
+  // Управление с клавиатуры
+  if (keys.w || keys.arrowup) dy -= 1;
+  if (keys.s || keys.arrowdown) dy += 1;
+  if (keys.a || keys.arrowleft) dx -= 1;
+  if (keys.d || keys.arrowright) dx += 1;
   
-  // Получаем направление движения из нажатых клавиш
-  if (keys['w'] || keys['arrowup']) moveY -= 1;
-  if (keys['s'] || keys['arrowdown']) moveY += 1;
-  if (keys['a'] || keys['arrowleft']) moveX -= 1;
-  if (keys['d'] || keys['arrowright']) moveX += 1;
-  
-  // Если движение происходит, обрабатываем его
-  if (moveX !== 0 || moveY !== 0) {
-    // Нормализуем диагональное движение, чтобы оно не было быстрее
-    if (moveX !== 0 && moveY !== 0) {
-      // √2/2 ≈ 0.7071 - коэффициент для нормализации диагонального движения
-      moveX *= 0.7071;
-      moveY *= 0.7071;
+  // Если есть движение
+  if (dx !== 0 || dy !== 0) {
+    // Нормализуем движение по диагонали
+    if (dx !== 0 && dy !== 0) {
+      const len = Math.sqrt(dx*dx + dy*dy);
+      dx /= len;
+      dy /= len;
     }
     
-    // Применяем скорость движения
-    const deltaX = moveX * player.speed;
-    const deltaY = moveY * player.speed;
+    // Рассчитываем новую позицию
+    const newX = player.x + dx * player.speed;
+    const newY = player.y + dy * player.speed;
     
-    // Пытаемся переместиться по X и Y отдельно с учётом коллизий
-    const nextX = player.x + deltaX;
-    const nextY = player.y + deltaY;
-    
-    debug(`Перемещение: dX=${deltaX.toFixed(2)}, dY=${deltaY.toFixed(2)}, из [${player.x.toFixed(0)}, ${player.y.toFixed(0)}] в [${nextX.toFixed(0)}, ${nextY.toFixed(0)}]`);
-    
-    // Проверяем и выполняем движение по X, если нет коллизии
-    if (!isCollidingWithWalls(nextX, player.y, player.radius)) {
-      player.x = nextX;
+    // Отдельная проверка движения по X и Y для возможности скользить вдоль стен
+    if (!checkCollision(newX, player.y, player.radius)) {
+      player.x = newX;
     }
     
-    // Проверяем и выполняем движение по Y, если нет коллизии
-    if (!isCollidingWithWalls(player.x, nextY, player.radius)) {
-      player.y = nextY;
+    if (!checkCollision(player.x, newY, player.radius)) {
+      player.y = newY;
     }
     
-    // Если координаты изменились, сбрасываем кэш видимости
-    if (oldX !== player.x || oldY !== player.y) {
+    // Если позиция изменилась, сбрасываем кеш видимости
+    if (player.x !== startX || player.y !== startY) {
       invalidateVisionCache();
-      debug(`Игрок переместился на [${player.x.toFixed(0)}, ${player.y.toFixed(0)}]`);
+      debug(`Игрок переместился: [${player.x.toFixed(0)}, ${player.y.toFixed(0)}]`);
     }
-  }
-  
-  // Обновляем снаряды
-  if (typeof updateProjectiles === 'function') {
-    updateProjectiles(1 / 60); // Предполагаем 60 FPS
   }
 }

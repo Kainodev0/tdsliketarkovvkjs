@@ -1,301 +1,198 @@
 // src/systems/visionSystem.js
-// Improved vision system with Darkwood-style effect
+// Версия с максимальным упрощением, которая гарантированно должна работать
 
-// Кэш видимых точек и координаты последнего положения игрока
+import { map } from '../engine/map.js';
+import { debug } from '../engine/debugger.js';
+
+// Глобальные переменные для кеширования
 let visionCache = null;
 let lastPlayerX = null;
 let lastPlayerY = null;
 let lastPlayerAngle = null;
 
-// Импортируем map напрямую
-import { map } from '../engine/map.js';
-import { debug } from '../engine/debugger.js';
-
 /**
- * Проверяет пересечение луча со стеной и возвращает точку пересечения
- * @param {number} startX - Начальная X координата
- * @param {number} startY - Начальная Y координата
- * @param {number} angle - Угол луча в радианах
- * @param {number} maxDistance - Максимальная дистанция луча
- * @param {Object} currentMap - Карта с препятствиями
- * @returns {Object} - Точка пересечения или конечная точка луча
- */
-function castRay(startX, startY, angle, maxDistance, currentMap) {
-  // Шаг луча (меньший шаг даёт более точное попадание)
-  const step = 5;
-  
-  // Направление луча
-  const rayDirX = Math.cos(angle);
-  const rayDirY = Math.sin(angle);
-  
-  // Текущая позиция луча
-  let x = startX;
-  let y = startY;
-  let distance = 0;
-  
-  // Идём вдоль луча до препятствия или максимальной дистанции
-  while (distance < maxDistance) {
-    // Проверяем пересечение со стенами
-    if (currentMap && currentMap.walls) {
-      for (const wall of currentMap.walls) {
-        // Проверяем только стены без вращения для упрощения
-        if (!wall.rotation && 
-            x > wall.x && x < wall.x + wall.w && 
-            y > wall.y && y < wall.y + wall.h) {
-          // Луч пересёкся со стеной, возвращаем точку пересечения
-          return { 
-            x, 
-            y, 
-            distance,
-            hit: true 
-          };
-        }
-      }
-    }
-    
-    // Увеличиваем дистанцию и продолжаем луч
-    distance += step;
-    x += rayDirX * step;
-    y += rayDirY * step;
-  }
-  
-  // Достигли максимальной дистанции без пересечений
-  return { 
-    x, 
-    y, 
-    distance: maxDistance,
-    hit: false 
-  };
-}
-
-/**
- * Создаёт массив точек для построения конуса видимости
- * @param {Object} player - Объект игрока
- * @param {Object} customMap - Карта (опционально)
- * @param {number} viewDistance - Максимальная дистанция видимости
- * @param {number} coneAngle - Угол конуса видимости в радианах (по умолчанию 2.0 ≈ 115 градусов)
- * @returns {Object} - Объект с точками для конуса видимости
+ * Создаёт данные о видимости для игрока
  */
 export function getVisibleTiles(player, customMap, viewDistance = 500, coneAngle = 2.0) {
+  // Используем любую карту, которая доступна
+  const currentMap = customMap || map || { walls: [] };
+  
+  // Базовые проверки
   if (!player) {
-    debug("Ошибка: Объект игрока не определен в getVisibleTiles", "error");
-    return null;
+    debug("Ошибка: игрок не определён", "error");
+    return { points: [], coneTip: { x: 0, y: 0 }, angle: 0, coneAngle: 0, viewDistance: 0 };
   }
+
+  // Получаем координаты игрока
+  const playerX = player.x || 0;
+  const playerY = player.y || 0;
+  const playerAngle = player.angle || 0;
   
-  // Используем переданную карту или дефолтную
-  const currentMap = customMap || map;
-  
-  // Проверяем на изменения положения игрока
+  // Проверка кеша (если положение не изменилось, используем кеш)
   if (visionCache && 
-      player.x === lastPlayerX && 
-      player.y === lastPlayerY && 
-      player.angle === lastPlayerAngle) {
+      playerX === lastPlayerX && 
+      playerY === lastPlayerY && 
+      playerAngle === lastPlayerAngle) {
     return visionCache;
   }
   
-  // Отладочная информация
-  debug(`Расчет конуса видимости: x=${player.x}, y=${player.y}, angle=${player.angle.toFixed(2)}`);
-  
-  const startTime = performance.now();
-  
-  // Создаём конус видимости
-  const rayCount = 40; // Увеличиваем количество лучей для более гладкого конуса
+  // Создаём простой конус видимости без рейкастинга
+  const rayCount = 40;
   const halfCone = coneAngle / 2;
-  
-  // Начальная позиция игрока
-  const startX = player.x;
-  const startY = player.y;
-  const playerAngle = player.angle;
-  
-  // Массив точек для конуса
   const rayPoints = [];
   
   // Добавляем начальную точку (позицию игрока)
-  rayPoints.push({ x: startX, y: startY });
+  rayPoints.push({ x: playerX, y: playerY });
   
-  // Бросаем лучи вперёд в конусе видимости
+  // Создаём лучи по кругу
   for (let i = 0; i <= rayCount; i++) {
-    // Угол текущего луча (от -halfCone до +halfCone относительно направления игрока)
     const rayAngle = playerAngle - halfCone + (coneAngle * i / rayCount);
-    
-    // Бросаем луч и получаем точку пересечения
-    const hitPoint = castRay(startX, startY, rayAngle, viewDistance, currentMap);
-    rayPoints.push({ x: hitPoint.x, y: hitPoint.y });
+    const x = playerX + Math.cos(rayAngle) * viewDistance;
+    const y = playerY + Math.sin(rayAngle) * viewDistance;
+    rayPoints.push({ x, y });
   }
   
   // Создаём структуру данных для видимости
   const visibilityData = {
-    coneTip: { x: startX, y: startY },
+    coneTip: { x: playerX, y: playerY },
     points: rayPoints,
     angle: playerAngle,
     coneAngle: coneAngle,
     viewDistance: viewDistance
   };
   
-  // Сохраняем кэш и положение игрока
+  // Сохраняем кеш
   visionCache = visibilityData;
-  lastPlayerX = player.x;
-  lastPlayerY = player.y;
-  lastPlayerAngle = player.angle;
-  
-  const endTime = performance.now();
-  // Логируем время выполнения для отладки производительности
-  if (endTime - startTime > 10) { // Порог уменьшен для более частого отлова
-    debug(`Расчёт видимости занял ${(endTime - startTime).toFixed(2)}ms`, 'warn');
-  }
+  lastPlayerX = playerX;
+  lastPlayerY = playerY;
+  lastPlayerAngle = playerAngle;
   
   return visibilityData;
 }
 
 /**
- * Проверяет, находится ли точка внутри конуса видимости
- * @param {Object} point - Точка для проверки {x, y}
- * @param {Object} visibilityData - Данные о видимости
- * @returns {boolean} - True, если точка видима
+ * Проверяет, видима ли точка игроком
  */
 export function isPointVisible(point, visibilityData) {
+  // Если нет данных о видимости, считаем всё видимым
   if (!visibilityData || !visibilityData.points || visibilityData.points.length < 3) {
-    return false;
+    return true;
   }
   
-  // Проверяем расстояние от точки до игрока
-  const dx = point.x - visibilityData.coneTip.x;
-  const dy = point.y - visibilityData.coneTip.y;
+  const playerX = visibilityData.coneTip.x;
+  const playerY = visibilityData.coneTip.y;
+  
+  // Если точка слишком близко - всегда видима
+  const dx = point.x - playerX;
+  const dy = point.y - playerY;
   const distance = Math.sqrt(dx * dx + dy * dy);
   
-  // Если точка слишком далеко - она не видима
+  if (distance < 50) {
+    return true;
+  }
+  
+  // Если точка дальше, чем видимость - не видна
   if (distance > visibilityData.viewDistance) {
     return false;
   }
   
-  // Если точка очень близко к игроку - она всегда видима
-  const nearSightRadius = 40; // Увеличен для лучшей видимости вблизи игрока
-  if (distance < nearSightRadius) {
-    return true;
-  }
-  
-  // Вычисляем угол между игроком и точкой
+  // Простая проверка по углу
   const angle = Math.atan2(dy, dx);
+  const playerAngle = visibilityData.angle;
   
-  // Нормализуем угол игрока и точки, чтобы они были в одном диапазоне
+  // Нормализуем углы
   const normalizeAngle = (a) => {
     while (a < -Math.PI) a += 2 * Math.PI;
     while (a > Math.PI) a -= 2 * Math.PI;
     return a;
   };
   
-  const normalizedPlayerAngle = normalizeAngle(visibilityData.angle);
-  const normalizedPointAngle = normalizeAngle(angle);
+  const angleDiff = Math.abs(normalizeAngle(playerAngle) - normalizeAngle(angle));
+  const halfCone = visibilityData.coneAngle / 2;
   
-  // Вычисляем разницу углов
-  let angleDiff = Math.abs(normalizedPlayerAngle - normalizedPointAngle);
-  if (angleDiff > Math.PI) {
-    angleDiff = 2 * Math.PI - angleDiff;
-  }
-  
-  // Проверяем, находится ли точка в конусе видимости
-  if (angleDiff <= visibilityData.coneAngle / 2) {
-    // Проверяем, нет ли стены между игроком и точкой
-    // Для этого бросаем луч от игрока к точке
-    const rayToPoint = castRay(
-      visibilityData.coneTip.x,
-      visibilityData.coneTip.y,
-      angle,
-      distance,
-      map
-    );
-    
-    // Если луч пересекся со стеной до достижения точки,
-    // то точка не видима
-    const distToHit = Math.sqrt(
-      Math.pow(rayToPoint.x - visibilityData.coneTip.x, 2) +
-      Math.pow(rayToPoint.y - visibilityData.coneTip.y, 2)
-    );
-    
-    return distToHit >= distance - 2; // Небольшой запас для погрешности
-  }
-  
-  return false;
+  return angleDiff <= halfCone || angleDiff >= (2 * Math.PI - halfCone);
 }
 
 /**
- * Упрощенная версия применения эффекта видимости
- * Использует более простую технику для большей совместимости
- * @param {CanvasRenderingContext2D} ctx - Контекст рисования
- * @param {Object} visibilityData - Данные о видимости
+ * Применяет эффект видимости (чёрно-белая область вне конуса)
  */
 export function applyVisionEffect(ctx, visibilityData) {
-  // Без данных о видимости ничего не делаем
   if (!visibilityData || !visibilityData.points || visibilityData.points.length < 3) {
-    debug("Нет данных о видимости в applyVisionEffect", "error");
     return;
   }
   
-  const { width, height } = ctx.canvas;
+  // Получаем размеры канваса
+  const width = ctx.canvas.width;
+  const height = ctx.canvas.height;
   
   try {
-    // 1. Получаем текущую сцену как изображение
-    const sceneImage = ctx.getImageData(0, 0, width, height);
+    // Создаём отдельный канвас для маски
+    const maskCanvas = document.createElement('canvas');
+    maskCanvas.width = width;
+    maskCanvas.height = height;
+    const maskCtx = maskCanvas.getContext('2d');
     
-    // 2. Создаем и применяем эффект черно-белого изображения
-    const grayscaleData = new Uint8ClampedArray(sceneImage.data);
-    for (let i = 0; i < grayscaleData.length; i += 4) {
-      const avg = Math.round((grayscaleData[i] + grayscaleData[i + 1] + grayscaleData[i + 2]) / 3);
-      // Затемняем изображение
-      const darkGray = Math.round(avg * 0.3);
-      grayscaleData[i] = darkGray; // R
-      grayscaleData[i + 1] = darkGray; // G
-      grayscaleData[i + 2] = darkGray; // B
-      // Alpha оставляем без изменений
-    }
-    const grayscaleImage = new ImageData(grayscaleData, width, height);
+    // Рисуем конус видимости (белым по чёрному)
+    maskCtx.fillStyle = 'black';
+    maskCtx.fillRect(0, 0, width, height);
     
-    // 3. Рисуем черно-белую версию сцены
-    ctx.putImageData(grayscaleImage, 0, 0);
-    
-    // 4. Создаем временный канвас для конуса видимости
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = width;
-    tempCanvas.height = height;
-    const tempCtx = tempCanvas.getContext('2d');
-    
-    // 5. Рисуем конус видимости на временном канвасе
-    tempCtx.fillStyle = '#fff'; // Белый цвет для маски
-    tempCtx.beginPath();
-    tempCtx.moveTo(visibilityData.coneTip.x, visibilityData.coneTip.y);
+    maskCtx.fillStyle = 'white';
+    maskCtx.beginPath();
+    maskCtx.moveTo(visibilityData.coneTip.x, visibilityData.coneTip.y);
     
     for (let i = 1; i < visibilityData.points.length; i++) {
-      tempCtx.lineTo(visibilityData.points[i].x, visibilityData.points[i].y);
+      maskCtx.lineTo(visibilityData.points[i].x, visibilityData.points[i].y);
     }
     
-    tempCtx.closePath();
-    tempCtx.fill();
+    maskCtx.closePath();
+    maskCtx.fill();
     
-    // 6. Добавляем круг вокруг игрока для ближнего зрения
-    tempCtx.beginPath();
-    tempCtx.arc(visibilityData.coneTip.x, visibilityData.coneTip.y, 40, 0, Math.PI * 2);
-    tempCtx.fill();
+    // Круг вокруг игрока
+    maskCtx.beginPath();
+    maskCtx.arc(
+      visibilityData.coneTip.x, 
+      visibilityData.coneTip.y, 
+      50, // Радиус ближнего зрения
+      0, 
+      Math.PI * 2
+    );
+    maskCtx.fill();
     
-    // 7. Используем временный канвас как маску
-    ctx.save();
-    // Используем маску для вырезания области видимости
-    ctx.globalCompositeOperation = 'destination-in';
-    ctx.drawImage(tempCanvas, 0, 0);
+    // Сделаем копию текущей сцены (цветной)
+    const originalScene = ctx.getImageData(0, 0, width, height);
     
-    // 8. Рисуем оригинальную цветную сцену в области видимости
+    // Сделаем чёрно-белую версию сцены
+    const graySceneData = new Uint8ClampedArray(originalScene.data);
+    for (let i = 0; i < graySceneData.length; i += 4) {
+      const avg = (graySceneData[i] + graySceneData[i + 1] + graySceneData[i + 2]) / 3;
+      const dark = avg * 0.3; // Затемняем чёрно-белую область
+      graySceneData[i] = dark;
+      graySceneData[i + 1] = dark;
+      graySceneData[i + 2] = dark;
+    }
+    const grayScene = new ImageData(graySceneData, width, height);
+    
+    // Накладываем чёрно-белую сцену
+    ctx.putImageData(grayScene, 0, 0);
+    
+    // Накладываем маску конуса видимости
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.drawImage(maskCanvas, 0, 0);
+    
+    // Накладываем оригинальную цветную сцену только в области конуса
+    ctx.globalCompositeOperation = 'source-atop';
+    ctx.putImageData(originalScene, 0, 0);
+    
+    // Возвращаем нормальный режим наложения
     ctx.globalCompositeOperation = 'source-over';
-    ctx.putImageData(sceneImage, 0, 0);
-    ctx.restore();
     
-    debug("Эффект видимости успешно применён");
-  } catch (err) {
-    debug(`Ошибка при применении эффекта видимости: ${err.message}`, "error");
-    console.error(err);
+  } catch (error) {
+    debug(`Ошибка в applyVisionEffect: ${error.message}`, "error");
+    console.error(error);
   }
 }
 
-// Сброс кэша видимости
+// Сброс кеша
 export function invalidateVisionCache() {
   visionCache = null;
-  debug("Кэш видимости сброшен");
 }
