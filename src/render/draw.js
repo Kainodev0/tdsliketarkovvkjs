@@ -1,5 +1,5 @@
 // src/render/draw.js
-// Упрощенная система отрисовки
+// Обновлённая система отрисовки с исправленным порядком операций
 
 import { debug } from '../engine/debugger.js';
 import { drawMap, map } from '../engine/map.js';
@@ -89,14 +89,17 @@ export function draw(ctx, player) {
       return;
     }
     
-    // Сохраняем состояние контекста
-    ctx.save();
+    // Очищаем весь canvas перед отрисовкой нового кадра
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     
-    // Центрируем камеру на игроке
+    // Рассчитываем смещение камеры (относительно игрока)
     const canvasWidth = ctx.canvas.width;
     const canvasHeight = ctx.canvas.height;
     const cameraX = player.x - canvasWidth / 2;
     const cameraY = player.y - canvasHeight / 2;
+    
+    // Сохраняем состояние контекста
+    ctx.save();
     
     // Смещаем "мир" относительно камеры
     ctx.translate(-cameraX, -cameraY);
@@ -113,13 +116,22 @@ export function draw(ctx, player) {
     // 4. Рисуем игрока
     drawPlayer(ctx, player);
     
+    // Сохраняем текущий контекст со всеми отрисованными объектами
+    ctx.restore();
+    
+    // Сохраняем еще раз для применения эффекта видимости
+    ctx.save();
+    
+    // Применяем смещение камеры снова для эффекта видимости
+    ctx.translate(-cameraX, -cameraY);
+    
     // 5. Применяем эффект видимости (черно-белое вне зоны видимости)
     applyVisionEffect(ctx, visibilityData);
     
     // Восстанавливаем состояние контекста
     ctx.restore();
     
-    // Рисуем интерфейс, если он есть
+    // Рисуем интерфейс, если он есть (уже в экранных координатах)
     if (window.gameState && window.gameState.showInventory) {
       if (typeof drawInventory === 'function') {
         try {
