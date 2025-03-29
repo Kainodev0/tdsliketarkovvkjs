@@ -1,20 +1,30 @@
 import { debug } from '../engine/debugger.js';
 import { drawMap, map } from '../engine/map.js';
 import { drawInventory } from '../systems/inventory/inventoryUI.js';
-import { getVisibleTiles, drawFog } from '../systems/visionSystem.js';
+import { getVisibleTiles, applyVisionEffect } from '../systems/visionSystem.js';
 
+/**
+ * Главная функция отрисовки игры
+ * @param {CanvasRenderingContext2D} ctx - Контекст рисования
+ * @param {Object} player - Объект игрока
+ */
 export function draw(ctx, player) {
-
+  // Сохраняем исходное состояние контекста
   ctx.save();
 
+  // Вычисляем смещение камеры (центрирование на игроке)
   const offsetX = player.x - ctx.canvas.width / 2;
   const offsetY = player.y - ctx.canvas.height / 2;
+  
+  // Смещаем камеру к игроку
   ctx.translate(-offsetX, -offsetY);
 
-  // 1. Рисуем карту
+  // 1. Сначала рисуем всю карту полностью
   drawMap(ctx);
 
-  // 2. Рисуем игрока
+  // 2. Рисуем лут и других персонажей (сейчас в drawMap)
+  
+  // 3. Рисуем главного игрока
   ctx.save();
   ctx.translate(player.x, player.y);
   ctx.rotate(player.angle);
@@ -29,14 +39,16 @@ export function draw(ctx, player) {
   ctx.stroke();
   ctx.restore();
 
-  // 3. Система видимости (fog of war)
-  // Используем напрямую импортированный map, а не window.map
-  const visible = getVisibleTiles(player, map);
-  drawFog(ctx, visible);
-
+  // 4. Получаем данные о видимости
+  const visibilityData = getVisibleTiles(player, map);
+  
+  // 5. Применяем эффект области видимости (затемняем невидимые области)
+  applyVisionEffect(ctx, visibilityData);
+  
+  // Восстанавливаем контекст после всех смещений камеры
   ctx.restore();
 
-  // 4. Рисуем инвентарь, если открыт
+  // 6. Рисуем HUD и интерфейс поверх всего остального
   if (window.gameState?.showInventory) {
     drawInventory(ctx, player.inventory);
   }
