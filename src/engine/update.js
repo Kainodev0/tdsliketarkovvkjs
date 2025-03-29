@@ -49,9 +49,18 @@ export function update(player) {
     return;
   }
   
+  // Установим скорость движения, если она не определена
+  if (typeof player.speed !== 'number' || isNaN(player.speed)) {
+    player.speed = 5; // Установим нормальную скорость
+    debug("Скорость игрока не была определена, установлено значение: " + player.speed);
+  }
+  
   // Сохраняем старые координаты для последующего сравнения
   const oldX = player.x;
   const oldY = player.y;
+  
+  // Добавим отладочную информацию о состоянии клавиш
+  debug(`Клавиши: W:${!!keys['w']}, A:${!!keys['a']}, S:${!!keys['s']}, D:${!!keys['d']}`);
   
   // Вектор движения
   let moveX = 0;
@@ -80,8 +89,7 @@ export function update(player) {
     const nextX = player.x + deltaX;
     const nextY = player.y + deltaY;
     
-    // Отладочное сообщение для проверки координат
-    // debug(`Attempt move to X:${nextX}, Y:${nextY} from X:${player.x}, Y:${player.y}`);
+    debug(`Перемещение: dX=${deltaX.toFixed(2)}, dY=${deltaY.toFixed(2)}, из [${player.x.toFixed(0)}, ${player.y.toFixed(0)}] в [${nextX.toFixed(0)}, ${nextY.toFixed(0)}]`);
     
     // Проверяем и выполняем движение по X, если нет коллизии
     if (!isCollidingWithWalls(nextX, player.y, player.radius)) {
@@ -96,6 +104,7 @@ export function update(player) {
     // Если координаты изменились, сбрасываем кэш видимости
     if (oldX !== player.x || oldY !== player.y) {
       invalidateVisionCache();
+      debug(`Игрок переместился на [${player.x.toFixed(0)}, ${player.y.toFixed(0)}]`);
     }
   }
   

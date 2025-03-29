@@ -33,10 +33,10 @@ function gameLoop(timestamp) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     // Обновляем состояние игры
-    measureTime(() => update(player), 'update');
+    measureTime(() => update(window.player), 'update');
     
     // Отрисовываем игровую сцену
-    measureTime(() => draw(ctx, player), 'draw');
+    measureTime(() => draw(ctx, window.player), 'draw');
     
     // Отображаем FPS если включено
     if (window.gameState.showFPS) {
@@ -63,6 +63,20 @@ export async function startGame() {
     const canvas = document.getElementById('gameCanvas');
     if (!canvas) throw new Error('Canvas не найден!');
     
+    // Проверяем и инициализируем игрока если нужно
+    if (!window.player || !window.player.x || !window.player.y) {
+      debug("⚠️ Игрок не инициализирован, создаём базовые параметры");
+      window.player = window.player || {};
+      window.player.x = 400;
+      window.player.y = 300;
+      window.player.angle = 0;
+      window.player.speed = 5; 
+      window.player.radius = 15;
+      window.player.color = '#4af';
+      window.player.health = 100;
+      window.player.maxHealth = 100;
+    }
+    
     // Настраиваем ввод
     setupInput(canvas);
     debug('🎮 Управление готово');
@@ -79,16 +93,21 @@ export async function startGame() {
     // Для отладки показываем загруженные ассеты
     debugAssets();
     
-    // Генерируем стартовое снаряжение
-    const startingItems = generateStartingGear();
-    for (const item of startingItems) {
-      const result = addItemToInventory(player.inventory, item);
-      if (result) debug(`🎒 Добавлен предмет: ${item.name}`);
+    // Генерируем стартовое снаряжение, если инвентарь есть
+    if (window.player.inventory) {
+      const startingItems = generateStartingGear();
+      for (const item of startingItems) {
+        const result = addItemToInventory(window.player.inventory, item);
+        if (result) debug(`🎒 Добавлен предмет: ${item.name}`);
+      }
     }
     
     // Устанавливаем сцену
     window.gameState.scene = 'map';
     debug('🗺️ Сцена установлена: map');
+    
+    // Отладочная информация о состоянии игрока
+    debug(`Позиция игрока: x=${window.player.x}, y=${window.player.y}, speed=${window.player.speed}`);
     
     // Добавляем кнопку для отображения FPS
     const fpsToggleButton = document.createElement('button');
@@ -105,8 +124,8 @@ export async function startGame() {
     debug('🚀 Запускаем игровой цикл...');
     requestAnimationFrame(gameLoop);
     
-    // По умолчанию отключаем отладку, но её можно включить через кнопку в UI
-    toggleDebug(false);
+    // Включаем отладку для помощи с диагностикой
+    toggleDebug(true);
     
   } catch (error) {
     debug(`❌ Критическая ошибка: ${error.message}`, 'error');

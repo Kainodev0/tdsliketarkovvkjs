@@ -77,6 +77,11 @@ function castRay(startX, startY, angle, maxDistance, currentMap) {
  * @returns {Object} - Объект с точками для конуса видимости
  */
 export function getVisibleTiles(player, customMap, viewDistance = 500, coneAngle = 2.0) {
+  if (!player) {
+    debug("Ошибка: Объект игрока не определен в getVisibleTiles", "error");
+    return null;
+  }
+  
   // Используем переданную карту или дефолтную
   const currentMap = customMap || map;
   
@@ -87,6 +92,9 @@ export function getVisibleTiles(player, customMap, viewDistance = 500, coneAngle
       player.angle === lastPlayerAngle) {
     return visionCache;
   }
+  
+  // Отладочная информация
+  debug(`Расчет конуса видимости: x=${player.x}, y=${player.y}, angle=${player.angle.toFixed(2)}`);
   
   const startTime = performance.now();
   
@@ -211,93 +219,83 @@ export function isPointVisible(point, visibilityData) {
 }
 
 /**
- * Применяет эффект видимости в стиле Darkwood к сцене
+ * Упрощенная версия применения эффекта видимости
+ * Использует более простую технику для большей совместимости
  * @param {CanvasRenderingContext2D} ctx - Контекст рисования
  * @param {Object} visibilityData - Данные о видимости
  */
 export function applyVisionEffect(ctx, visibilityData) {
   // Без данных о видимости ничего не делаем
   if (!visibilityData || !visibilityData.points || visibilityData.points.length < 3) {
+    debug("Нет данных о видимости в applyVisionEffect", "error");
     return;
   }
   
   const { width, height } = ctx.canvas;
   
-  // 1. Сохраняем текущую сцену (цветную)
-  const originalScene = ctx.getImageData(0, 0, width, height);
-  
-  // 2. Создаем серую версию сцены
-  const grayscaleScene = ctx.getImageData(0, 0, width, height);
-  const grayscaleData = grayscaleScene.data;
-  
-  // Преобразуем все пиксели в grayscale
-  for (let i = 0; i < grayscaleData.length; i += 4) {
-    const r = grayscaleData[i];
-    const g = grayscaleData[i + 1];
-    const b = grayscaleData[i + 2];
+  try {
+    // 1. Получаем текущую сцену как изображение
+    const sceneImage = ctx.getImageData(0, 0, width, height);
     
-    // Формула для преобразования в оттенки серого
-    const gray = 0.3 * r + 0.59 * g + 0.11 * b;
+    // 2. Создаем и применяем эффект черно-белого изображения
+    const grayscaleData = new Uint8ClampedArray(sceneImage.data);
+    for (let i = 0; i < grayscaleData.length; i += 4) {
+      const avg = Math.round((grayscaleData[i] + grayscaleData[i + 1] + grayscaleData[i + 2]) / 3);
+      // Затемняем изображение
+      const darkGray = Math.round(avg * 0.3);
+      grayscaleData[i] = darkGray; // R
+      grayscaleData[i + 1] = darkGray; // G
+      grayscaleData[i + 2] = darkGray; // B
+      // Alpha оставляем без изменений
+    }
+    const grayscaleImage = new ImageData(grayscaleData, width, height);
     
-    // Затемняем серую область для лучшего контраста
-    const darkGray = gray * 0.3;
+    // 3. Рисуем черно-белую версию сцены
+    ctx.putImageData(grayscaleImage, 0, 0);
     
-    grayscaleData[i] = darkGray;     // R
-    grayscaleData[i + 1] = darkGray; // G
-    grayscaleData[i + 2] = darkGray; // B
-    // Не меняем alpha канал
+    // 4. Создаем временный канвас для конуса видимости
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = width;
+    tempCanvas.height = height;
+    const tempCtx = tempCanvas.getContext('2d');
+    
+    // 5. Рисуем конус видимости на временном канвасе
+    tempCtx.fillStyle = '#fff'; // Белый цвет для маски
+    tempCtx.beginPath();
+    tempCtx.moveTo(visibilityData.coneTip.x, visibilityData.coneTip.y);
+    
+    for (let i = 1; i < visibilityData.points.length; i++) {
+      tempCtx.lineTo(visibilityData.points[i].x, visibilityData.points[i].y);
+    }
+    
+    tempCtx.closePath();
+    tempCtx.fill();
+    
+    // 6. Добавляем круг вокруг игрока для ближнего зрения
+    tempCtx.beginPath();
+    tempCtx.arc(visibilityData.coneTip.x, visibilityData.coneTip.y, 40, 0, Math.PI * 2);
+    tempCtx.fill();
+    
+    // 7. Используем временный канвас как маску
+    ctx.save();
+    // Используем маску для вырезания области видимости
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.drawImage(tempCanvas, 0, 0);
+    
+    // 8. Рисуем оригинальную цветную сцену в области видимости
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.putImageData(sceneImage, 0, 0);
+    ctx.restore();
+    
+    debug("Эффект видимости успешно применён");
+  } catch (err) {
+    debug(`Ошибка при применении эффекта видимости: ${err.message}`, "error");
+    console.error(err);
   }
-  
-  // 3. Рисуем ч/б версию сцены
-  ctx.putImageData(grayscaleScene, 0, 0);
-  
-  // 4. Создаем маску для области видимости
-  const maskCanvas = document.createElement('canvas');
-  maskCanvas.width = width;
-  maskCanvas.height = height;
-  const maskCtx = maskCanvas.getContext('2d');
-  
-  // Черный фон для маски
-  maskCtx.fillStyle = 'black';
-  maskCtx.fillRect(0, 0, width, height);
-  
-  // Рисуем белый конус видимости на маске
-  maskCtx.fillStyle = 'white';
-  
-  // Конус видимости
-  maskCtx.beginPath();
-  maskCtx.moveTo(visibilityData.coneTip.x, visibilityData.coneTip.y);
-  
-  for (let i = 1; i < visibilityData.points.length; i++) {
-    maskCtx.lineTo(visibilityData.points[i].x, visibilityData.points[i].y);
-  }
-  
-  maskCtx.closePath();
-  maskCtx.fill();
-  
-  // Добавляем круговую область вокруг игрока
-  maskCtx.beginPath();
-  maskCtx.arc(visibilityData.coneTip.x, visibilityData.coneTip.y, 40, 0, Math.PI * 2);
-  maskCtx.fill();
-  
-  // 5. Рисуем цветную сцену через маску только в области видимости
-  ctx.save();
-  
-  // Используем маску как источник непрозрачности
-  ctx.globalCompositeOperation = 'destination-in';
-  ctx.drawImage(maskCanvas, 0, 0);
-  
-  ctx.globalCompositeOperation = 'source-over';
-  ctx.drawImage(ctx.canvas, 0, 0);  // Сохраняем предыдущий рендер
-  
-  // Возвращаем цветные области
-  ctx.globalCompositeOperation = 'source-atop';
-  ctx.putImageData(originalScene, 0, 0);
-  
-  ctx.restore();
 }
 
 // Сброс кэша видимости
 export function invalidateVisionCache() {
   visionCache = null;
+  debug("Кэш видимости сброшен");
 }
